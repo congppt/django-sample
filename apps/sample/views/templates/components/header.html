@@ -1,0 +1,68 @@
+{% load static %}
+<header class="bg-white shadow-md">
+  <div class="mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative flex justify-between h-16">
+      <!-- Drawer Toggle -->
+      <div class="flex items-center">
+        <div class="w-5 h-5">{% include 'menu.svg' %}</div>
+      </div>
+      <!-- Logo Placeholder -->
+      <a href="/" class="absolute left-1/2 -translate-x-1/2 translate-y-full"><img
+          src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-1/2 w-auto"></a>
+      <!-- User Section -->
+      <div class="flex items-center space-x-4">
+        {% if not user.is_authenticated %}
+        <!-- Authenticated User: Greeting + Context Menu -->
+        <!-- Greeting -->
+        <div class="hidden md:block text-sm">
+          <span class="text-gray-600">Welcome, </span>
+          <span class="font-medium text-gray-900">
+            {{ user.get_full_name|default:user.username }}
+          </span>
+        </div>
+
+        <!-- User Context Menu -->
+        <div class="relative group">
+          <!-- User Avatar/Button -->
+          <button
+            class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <!-- <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <span class="text-sm font-medium text-gray-700">
+                    {{ user.get_full_name|default:user.username|first|upper }}
+                  </span>
+                </div> -->
+            <div class="w-4 h-4">{% include 'angle-down.svg' %}</div>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div
+            class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-in-out transform scale-95 group-hover:scale-100 group-focus:opacity-100 group-focus:visible group-focus:scale-100">
+            {% with menu_styling='px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center' %}
+            <!-- Profile Link -->
+            <a href="#" class="{{ menu_styling }}">
+              <div class="w-4 h-4">{% include 'user.svg' %}</div>
+              <span class="ml-2">Thông tin cá nhân</span>
+            </a>
+
+            <!-- Settings Link -->
+            <a href="#" class="{{ menu_styling }}">
+              <div class="w-4 h-4">{% include 'lock.svg' %}</div>
+              <span class="ml-2">Đổi mật khẩu</span>
+            </a>
+
+            <!-- Divider -->
+            <div class="border-t border-gray-100 my-1"></div>
+
+            <!-- Logout Link -->
+            <a href="#" class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
+              <div class="w-4 h-4">{% include 'sign-out.svg' %}</div>
+              <span class="ml-2">Đăng xuất</span>
+            </a>
+            {% endwith %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>

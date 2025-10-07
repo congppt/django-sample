@@ -1,0 +1,22 @@
+{% load static %}
+<aside id="nav-rail"
+    class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out z-40">
+    <div class="flex px-2 h-16 items-center">
+        <button id="rail-collapse-toggle" type="button" class="p-2 h-fit rounded-md hover:bg-gray-100 ms-auto"
+            aria-expanded="true" aria-label="Collapse navigation">
+            <div class="w-4 h-4">{% include 'angle-left.svg' %}</div>
+        </button>
+    </div>
+    <nav class="font-medium text-gray-800">
+        {% for item in nav_items %}
+        <a href="{{ item.url }}" class="flex items-center px-4 py-2 hover:bg-gray-100 ">
+            <span class="w-5 h-5 mr-3">{% include item.icon %}</span>
+            <span class="text-sm">{{ item.name }}</span>
+        </a>
+        {% endfor %}
+        <a href="#" class="flex items-center px-4 py-2 border-r-3 rounded-none border-orange-500 text-orange-500 bg-orange-50 hover:bg-orange-100">
+            <span class="w-5 h-5 mr-3">{% include 'setting.svg' %}</span>
+            <span class="text-sm">Cài đặt</span>
+        </a>
+    </nav>
+</aside>
