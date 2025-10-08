@@ -1,0 +1,470 @@
+{# Jinja2 template - no need for load statements #}
+
+<!-- Advanced Table Component -->
+<div class="bg-white shadow-sm rounded-lg border border-gray-200">
+    <!-- Table Header with Filters and Actions -->
+    <div class="px-6">
+        <!-- Table title -->
+        <h1 class="text-4xl font-semibold my-4">{{ table_title }}</h1>
+
+        <!-- Filters Row -->
+        <div class="my-2 grid grid-cols-3 gap-4">
+            {% if not text_search %}
+            <!-- Search -->
+            <div class="col-span-3">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div class="w-4 h-4 text-gray-400">{% include 'search.svg' %}</div>
+                    </div>
+                    <input type="text" id="table-search"
+                        class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Tìm kiếm {% for f in search_fields %}{{ f.label }}, {% endfor %}..."
+                        onkeyup="filterTable()">
+                </div>
+            </div>
+            {% endif %}
+            <!-- Custom Filters -->
+            {% for filter in table_filters %}
+            <div>
+                {% set input_style = 'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm' %}
+                {% if filter.type != 'select' %}
+                <select id="filter-{{ filter.name }}"
+                    class="{{ input_style }}"
+                    onchange="filterTable()">
+                    <option value="">{{ filter.label|default(filter.name|title) }}</option>
+                    {% for option in filter.options %}
+                    <option value="{{ option.value }}">{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+                {% elif filter.type == 'date' %}
+                <input type="date" id="filter-{{ filter.name }}"
+                    class="{{ input_style }}"
+                    onchange="filterTable()">
+                {% elif filter.type == 'datetime' %}
+                <input type="datetime-local" id="filter-{{ filter.name }}"
+                    class="{{ input_style }}"
+                    onchange="filterTable()">
+                {% elif filter.type == 'boolean' %}
+                <select id="filter-{{ filter.name }}"
+                    class="{{ input_style }}"
+                    onchange="filterTable()">
+                    <option value="">{{ filter.label|default(filter.name|title) }}</option>
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                </select>
+                {% endif %}
+
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Action Buttons -->
+        <div class="my-2 flex flex-wrap gap-2 justify-center">
+            {% if table_actions %}
+            {% for action in table_actions %}
+            <button type="button"
+                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-{{ action.color|default('blue') }}-600 hover:bg-{{ action.color|default('blue') }}-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ action.color|default('blue') }}-500 transition-colors duration-200"
+                onclick="{{ action.onclick|default('') }}" {% if action.disabled %}disabled{% endif %}>
+                {% if action.icon %}
+                <div class="w-4 h-4 mr-2">{% include action.icon %}</div>
+                {% endif %}
+                {{ action.label }}
+            </button>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="h-2/3 overflow-auto">
+        <table class="w-full" id="data-table">
+            <!-- Table Header -->
+            <thead class="bg-slate-500 text-gray-50 text-xs font-medium uppercase tracking-wider cursor-pointer">
+                <tr>
+                    {% if not bulk_actions %}
+                    <th class="py-3">
+                        <input type="checkbox">
+                    </th>
+                    {% endif %}
+                    {% for column in table_columns %}
+                    <th scope="col" class="py-3" data-sortable="{{ column.sortable|default('true') }}">
+                        <div class="flex items-center space-x-1 justify-{{ column.align|default('center') }}">
+                            <span>{{ column.label|default(column.name|title) }}</span>
+                            {% if column.sortable %}
+                            <div class="w-3 h-3 text-gray-400" id="sort-icon-{{ loop.index0 }}">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </th>
+                    {% endfor %}
+                    {% if table_row_actions %}
+                    <th scope="col" class="sticky right-0 py-3 text-center bg-slate-500">
+                        Actions
+                    </th>
+                    {% endif %}
+                </tr>
+            </thead>
+
+            <!-- Table Body -->
+            <tbody class="bg-white divide-y divide-gray-200" id="table-body">
+                {% for row in table_data %}
+                <tr class="transition-colors duration-150 hover:bg-gray-100 group"
+                    data-row-index="{{ loop.index0 }}">
+                    {% if not bulk_actions %}
+                    <td class="px-6 py-4 text-center">
+                        <input type="checkbox">
+                    </td>
+                    {% endif %}
+                    {% for column in table_columns %}
+                    <td
+                        class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-{{ column.align|default('center') }}">
+                        {% if column.type == 'image' %}
+                        <div class="flex-shrink-0 h-10 w-10">
+                            <img class="h-10 w-10 rounded-full object-cover" src="{{ row|get_attribute( column.name) }}"
+                                alt="">
+                        </div>
+                        {% elif column.type == 'badge' %}
+                        <span
+                            class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-{{ row|get_attribute( column.name)|get_badge_color() }}-100 text-{{ row|get_attribute( column.name)|get_badge_color() }}-800">
+                            {{ row|get_attribute( column.name) }}
+                        </span>
+                        {% elif column.type == 'date' %}
+                        {{ row|get_attribute( column.name)|strftime('%b %d, %Y') }}
+                        {% elif column.type == 'datetime' %}
+                        {{ row|get_attribute( column.name)|strftime('%b %d, %Y %H:%M') }}
+                        {% elif column.type == 'currency' %}
+                        {{ row|get_attribute( column.name)|round(2) }}đ
+                        {% elif column.type == 'number' %}
+                        {{ row|get_attribute( column.name)|round(0) }}
+                        {% elif column.type == 'boolean' %}
+                        <span class="inline-flex items-center">
+                            {% if row|get_attribute( column.name) %}
+                            <div class="w-4 h-4 text-green-500">{% include 'check.svg' %}</div>
+                            {% else %}
+                            <div class="w-4 h-4 text-red-500">{% include 'close.svg' %}</div>
+                            {% endif %}
+                        </span>
+                        {% else %}
+                        {{ row|get_attribute( column.name)|default("—") }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+
+                    <!-- Row Actions -->
+                    {% if table_row_actions %}
+                    <td class="px-6 py-4 sticky right-0 bg-white">
+                        <div class="flex items-center justify-center space-x-2">
+                            {% for action in table_row_actions %}
+                            <button type="button"
+                                class="inline-flex p-1.5 border border-transparent rounded-full text-{{ action.color|default('gray') }}-600 hover:text-{{ action.color|default('gray') }}-900 hover:bg-{{ action.color|default('gray') }}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ action.color|default('gray') }}-500 transition-colors duration-200"
+                                onclick="{{ action.onclick|default('') }}" title="{{ action.label }}">
+                                <div class="w-4 h-4">{% include action.icon %}</div>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            <!-- Mobile pagination -->
+            <button id="prev-mobile"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                onclick="changePage('prev')" disabled>
+                Previous
+            </button>
+            <button id="next-mobile"
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                onclick="changePage('next')">
+                Next
+            </button>
+        </div>
+        <!-- Page Size Selector -->
+        <div>
+            <select id="page-size"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                onchange="changePageSize()">
+                <option value="10">10 per page</option>
+                <option value="25" selected>25 per page</option>
+                <option value="50">50 per page</option>
+            </select>
+        </div>
+
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <!-- Results info -->
+            <div>
+                <p class="text-sm text-gray-700" id="results-info">
+                    Showing <span class="font-medium" id="start-item">1</span> to
+                    <span class="font-medium" id="end-item">25</span> of
+                    <span class="font-medium" id="total-items">0</span> results
+                </p>
+            </div>
+
+            <!-- Desktop pagination -->
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button id="prev-desktop"
+                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="changePage('prev')" disabled>
+                        <div class="w-4 h-4">{% include 'angle-left.svg' %}</div>
+                    </button>
+
+                    <!-- Page numbers -->
+                    <div id="page-numbers" class="flex">
+                        <!-- Page numbers will be generated by JavaScript -->
+                    </div>
+
+                    <button id="next-desktop"
+                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="changePage('next')">
+                        <div class="w-4 h-4">{% include 'angle-right.svg' %}</div>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table JavaScript -->
+<script>
+    class AdvancedTable {
+        constructor() {
+            this.currentPage = 1;
+            this.pageSize = 25;
+            this.totalItems = 0;
+            this.filteredData = [];
+            this.allData = [];
+            this.sortColumn = null;
+            this.sortDirection = 'asc';
+            this.maxVisiblePages = 5;
+
+            this.initializeTable();
+        }
+
+        initializeTable() {
+            // Get all table rows (excluding header)
+            const rows = document.querySelectorAll('#table-body tr[data-row-index]');
+            this.allData = Array.from(rows).map(row => ({
+                element: row,
+                data: this.extractRowData(row)
+            }));
+            this.filteredData = [...this.allData];
+            this.totalItems = this.filteredData.length;
+
+            this.updatePagination();
+            this.updateResultsInfo();
+        }
+
+        extractRowData(row) {
+            const cells = row.querySelectorAll('td');
+            const data = {};
+            cells.forEach((cell, index) => {
+                data[`col_${index}`] = cell.textContent.trim();
+            });
+            return data;
+        }
+
+        filterTable() {
+            const searchTerm = document.getElementById('table-search').value.toLowerCase();
+            const filters = {};
+
+            // Get filter values
+            document.querySelectorAll('[id^="filter-"]').forEach(filter => {
+                const filterName = filter.id.replace('filter-', '');
+                filters[filterName] = filter.value;
+            });
+
+            this.filteredData = this.allData.filter(item => {
+                // Search filter
+                if (searchTerm) {
+                    const searchMatch = Object.values(item.data).some(value =>
+                        value.toLowerCase().includes(searchTerm)
+                    );
+                    if (!searchMatch) return false;
+                }
+
+                // Custom filters
+                for (const [filterName, filterValue] of Object.entries(filters)) {
+                    if (filterValue && !item.data[`col_${filterName}`]?.includes(filterValue)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            this.totalItems = this.filteredData.length;
+            this.currentPage = 1;
+            this.updateDisplay();
+        }
+
+        sortTable(columnIndex) {
+            const header = document.querySelector(`th[onclick="sortTable(${columnIndex})"]`);
+            if (header.dataset.sortable === 'false') return;
+
+            // Update sort direction
+            if (this.sortColumn === columnIndex) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortColumn = columnIndex;
+                this.sortDirection = 'asc';
+            }
+
+            // Update sort icons
+            document.querySelectorAll('[id^="sort-icon-"]').forEach(icon => {
+                icon.innerHTML = '<svg fill="currentColor" viewBox="0 0 20 20"><path d="M5 12l5-5 5 5H5z"/></svg>';
+            });
+
+            const sortIcon = document.getElementById(`sort-icon-${columnIndex}`);
+            if (sortIcon) {
+                sortIcon.innerHTML = this.sortDirection === 'asc'
+                    ? '<svg fill="currentColor" viewBox="0 0 20 20"><path d="M5 12l5-5 5 5H5z"/></svg>'
+                    : '<svg fill="currentColor" viewBox="0 0 20 20"><path d="M15 8l-5 5-5-5h10z"/></svg>';
+            }
+
+            // Sort data
+            this.filteredData.sort((a, b) => {
+                const aVal = a.data[`col_${columnIndex}`] || '';
+                const bVal = b.data[`col_${columnIndex}`] || '';
+
+                if (this.sortDirection === 'asc') {
+                    return aVal.localeCompare(bVal, undefined, { numeric: true });
+                } else {
+                    return bVal.localeCompare(aVal, undefined, { numeric: true });
+                }
+            });
+
+            this.currentPage = 1;
+            this.updateDisplay();
+        }
+
+        changePageSize() {
+            this.pageSize = parseInt(document.getElementById('page-size').value);
+            this.currentPage = 1;
+            this.updateDisplay();
+        }
+
+        changePage(direction) {
+            const totalPages = Math.ceil(this.totalItems / this.pageSize);
+
+            if (direction === 'prev' && this.currentPage > 1) {
+                this.currentPage--;
+            } else if (direction === 'next' && this.currentPage < totalPages) {
+                this.currentPage++;
+            } else if (typeof direction === 'number') {
+                this.currentPage = direction;
+            }
+
+            this.updateDisplay();
+        }
+
+        updateDisplay() {
+            this.hideAllRows();
+            this.showCurrentPageRows();
+            this.updatePagination();
+            this.updateResultsInfo();
+        }
+
+        hideAllRows() {
+            this.allData.forEach(item => {
+                item.element.style.display = 'none';
+            });
+        }
+
+        showCurrentPageRows() {
+            const startIndex = (this.currentPage - 1) * this.pageSize;
+            const endIndex = startIndex + this.pageSize;
+
+            this.filteredData.slice(startIndex, endIndex).forEach(item => {
+                item.element.style.display = '';
+            });
+        }
+
+        updatePagination() {
+            const totalPages = Math.ceil(this.totalItems / this.pageSize);
+
+            // Update prev/next buttons
+            const prevButtons = document.querySelectorAll('#prev-mobile, #prev-desktop');
+            const nextButtons = document.querySelectorAll('#next-mobile, #next-desktop');
+
+            prevButtons.forEach(btn => {
+                btn.disabled = this.currentPage === 1;
+            });
+
+            nextButtons.forEach(btn => {
+                btn.disabled = this.currentPage === totalPages || totalPages === 0;
+            });
+
+            // Generate page numbers
+            this.generatePageNumbers(totalPages);
+        }
+
+        generatePageNumbers(totalPages) {
+            const pageNumbersContainer = document.getElementById('page-numbers');
+            pageNumbersContainer.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            const startPage = Math.max(1, this.currentPage - Math.floor(this.maxVisiblePages / 2));
+            const endPage = Math.min(totalPages, startPage + this.maxVisiblePages - 1);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.className = `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${i === this.currentPage
+                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }`;
+                pageButton.textContent = i;
+                pageButton.onclick = () => this.changePage(i);
+
+                pageNumbersContainer.appendChild(pageButton);
+            }
+        }
+
+        updateResultsInfo() {
+            const startItem = this.totalItems === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+            const endItem = Math.min(this.currentPage * this.pageSize, this.totalItems);
+
+            document.getElementById('start-item').textContent = startItem;
+            document.getElementById('end-item').textContent = endItem;
+            document.getElementById('total-items').textContent = this.totalItems;
+        }
+    }
+
+    // Global functions for template compatibility
+    let tableInstance;
+
+    function filterTable() {
+        if (tableInstance) {
+            tableInstance.filterTable();
+        }
+    }
+
+    function sortTable(columnIndex) {
+        if (tableInstance) {
+            tableInstance.sortTable(columnIndex);
+        }
+    }
+
+    function changePageSize() {
+        if (tableInstance) {
+            tableInstance.changePageSize();
+        }
+    }
+
+    function changePage(direction) {
+        if (tableInstance) {
+            tableInstance.changePage(direction);
+        }
+    }
+
+    // Initialize table when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        tableInstance = new AdvancedTable();
+    });
+</script>

@@ -1,0 +1,17 @@
+{% extends 'templates/layouts/base.html' %}
+{# Jinja2 template - no need for load statements #}
+
+{% block title %}Advanced Table Example{% endblock %}
+
+{% block content %}
+  <!-- Example Table -->
+{% with
+   table_title="User Management",
+   table_columns=table_columns,
+   table_data=table_data,
+   table_actions=table_actions,
+   table_row_actions=table_row_actions,
+   table_filters=table_filters %}
+{% include 'templates/components/table.html' %}
+{% endwith %}
+{% endblock %}

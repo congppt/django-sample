@@ -54,8 +54,19 @@ ROOT_URLCONF = 'engine.urls'
 
 TEMPLATES = [
     {
+        'BACKEND': 'django.template.backends.jinja2.Jinja2',
+        'DIRS': [
+            BASE_DIR / 'sample' / 'views', 
+            BASE_DIR / 'sample' / 'static' / 'icons'
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'environment': 'engine.jinja2.environment',
+        },
+    },
+    {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [f"{BASE_DIR}/sample/views", f"{BASE_DIR}/sample/static/icons"],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -65,10 +76,11 @@ TEMPLATES = [
             ],
         },
     },
+    
 ]
 
 WSGI_APPLICATION = 'engine.wsgi.application'
-
+ASGI_APPLICATION = 'dijango.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

@@ -1,23 +1,20 @@
-{% load static %}
+{# Jinja2 template - no need for load statements #}
 <header class="bg-white shadow-md">
   <div class="mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="relative flex justify-between h-16">
-      <!-- Drawer Toggle -->
-      <div class="flex items-center">
-        <div class="w-5 h-5">{% include 'menu.svg' %}</div>
-      </div>
+    <div class="relative flex justify-end h-16">
       <!-- Logo Placeholder -->
       <a href="/" class="absolute left-1/2 -translate-x-1/2 translate-y-full"><img
           src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-1/2 w-auto"></a>
       <!-- User Section -->
       <div class="flex items-center space-x-4">
+        {% set user = request.user %}
         {% if not user.is_authenticated %}
         <!-- Authenticated User: Greeting + Context Menu -->
         <!-- Greeting -->
         <div class="hidden md:block text-sm">
           <span class="text-gray-600">Welcome, </span>
           <span class="font-medium text-gray-900">
-            {{ user.get_full_name|default:user.username }}
+            {{ user.get_full_name|default(user.username) }}
           </span>
         </div>
 
@@ -28,7 +25,7 @@
             class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
             <!-- <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                   <span class="text-sm font-medium text-gray-700">
-                    {{ user.get_full_name|default:user.username|first|upper }}
+                    {{ user.get_full_name|default(user.username)|first|upper }}
                   </span>
                 </div> -->
             <div class="w-4 h-4">{% include 'angle-down.svg' %}</div>
