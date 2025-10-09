@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.urls import reverse
+from datetime import date, datetime, timedelta
 
 
 def _paginate(total_items: int, page: int, page_size: int):
@@ -31,13 +32,30 @@ def _paginate(total_items: int, page: int, page_size: int):
 def _mock_rows():
     rows = []
     statuses = ['Active', 'Inactive', 'Pending']
+    cities = ['New York', 'London', 'Tokyo', 'Berlin', 'Paris', 'Sydney']
+    countries = ['USA', 'UK', 'Japan', 'Germany', 'France', 'Australia']
+    departments = ['Engineering', 'Sales', 'Marketing', 'HR', 'Support']
+    roles = ['Admin', 'Manager', 'User', 'Guest']
     for i in range(1, 123):
         rows.append({
             'id': i,
             'name': f'User {i}',
+            'username': f'user{i:03d}',
             'email': f'user{i}@example.com',
+            'phone': f"+1-555-{1000 + i}",
             'status': statuses[i % len(statuses)],
             'age': 20 + (i % 30),
+            'city': cities[i % len(cities)],
+            'country': countries[i % len(countries)],
+            'department': departments[i % len(departments)],
+            'role': roles[i % len(roles)],
+            'company': f'ExampleCo {i % 7}',
+            'address': f'{100 + i} Main St',
+            'registered_on': date.today() - timedelta(days=i % 365),
+            'last_login': datetime.now() - timedelta(days=i % 30, hours=i % 24),
+            'balance': f"${(i * 13) % 10000}.{(i * 37) % 100:02d}",
+            'active': (i % 2 == 0),
+            'score': (i * 7) % 100,
         })
     return rows
 
@@ -84,9 +102,22 @@ def _common_context(request):
 
     table_columns = [
         {'name': 'name', 'label': 'Name', 'sortable': True},
+        {'name': 'username', 'label': 'Username', 'sortable': True},
         {'name': 'email', 'label': 'Email', 'sortable': True},
+        {'name': 'phone', 'label': 'Phone', 'sortable': False},
         {'name': 'status', 'label': 'Status', 'type': 'badge', 'sortable': True},
         {'name': 'age', 'label': 'Age', 'type': 'number', 'sortable': True},
+        {'name': 'city', 'label': 'City', 'sortable': True},
+        {'name': 'country', 'label': 'Country', 'sortable': True},
+        {'name': 'department', 'label': 'Department', 'sortable': True},
+        {'name': 'role', 'label': 'Role', 'sortable': True},
+        {'name': 'company', 'label': 'Company', 'sortable': True},
+        {'name': 'address', 'label': 'Address', 'sortable': False},
+        {'name': 'registered_on', 'label': 'Registered', 'type': 'date', 'sortable': True},
+        {'name': 'last_login', 'label': 'Last Login', 'type': 'datetime', 'sortable': True},
+        {'name': 'balance', 'label': 'Balance', 'type': 'currency', 'sortable': False, 'align': 'end'},
+        {'name': 'active', 'label': 'Active', 'type': 'boolean', 'sortable': True},
+        {'name': 'score', 'label': 'Score', 'type': 'number', 'sortable': True},
     ]
 
     context = {
@@ -94,7 +125,11 @@ def _common_context(request):
         'table_title': 'HTMX Table Demo',
         'data_url': reverse('table_demo_partial'),
         'table_columns': table_columns,
-        'table_row_actions': [],
+        'table_row_actions': [
+            { 'label': 'View', 'href': '/users/{id}', 'icon': 'eye', 'color': 'blue' },
+            { 'label': 'Edit', 'href': '/users/{id}/edit', 'icon': 'edit', 'color': 'green' },
+            { 'label': 'Delete', 'href': '/users/{id}/delete', 'icon': 'close', 'color': 'red' },
+        ],
         'bulk_actions': False,
         'table_filters': [
             {

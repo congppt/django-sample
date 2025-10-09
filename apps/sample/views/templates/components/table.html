@@ -1,5 +1,5 @@
 <div id="table-body">
-  <div class="overflow-auto max-h-120">
+  <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead class="sticky top-0 z-10 bg-slate-500 text-gray-50 text-xs font-medium uppercase tracking-wider cursor-pointer">
         <tr>
@@ -66,7 +66,7 @@
               {% elif column.type == 'number' %}
                 <span>{{ value }}</span>
               {% elif column.type == 'boolean' %}
-                <span>{% if value %}✔{% else %}✖{% endif %}</span>
+                {% if value %}<div class="w-4 h-4 text-green-500 inline-block">{% include 'check.svg' %}</div>{% else %}<div class="w-4 h-4 text-red-500 inline-block">{% include 'close.svg' %}</div>{% endif %}
               {% else %}
                 <span>{{ value or '—' }}</span>
               {% endif %}
@@ -75,9 +75,16 @@
   
             {% if table_row_actions and table_row_actions|length > 0 %}
             <td class="px-6 py-4 sticky right-0 {% if loop.index0 % 2 == 0 %}bg-gray-100{% else %}bg-white{% endif %}">
-              <div class="flex items-center justify-center space-x-2">
+              <div class="flex items-center justify-center gap-2">
                 {% for action in table_row_actions %}
-                  <a href="{{ action.href or '#' }}" title="{{ action.label }}" class="inline-flex p-1.5 border border-transparent rounded-full text-{{ action.color or 'gray' }}-600 hover:text-{{ action.color or 'gray' }}-900 hover:bg-{{ action.color or 'gray' }}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ action.color or 'gray' }}-500 transition-colors duration-200">{{ action.icon or '⋯' }}</a>
+                  {% set href = (action.href or '#')|replace('{id}', row.id) %}
+                  <a href="{{ href }}" title="{{ action.label }}" class="inline-flex p-1.5 border border-transparent rounded-full text-{{ action.color or 'gray' }}-600 hover:text-{{ action.color or 'gray' }}-900 hover:bg-{{ action.color or 'gray' }}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ action.color or 'gray' }}-500 transition-colors duration-200">
+                    {% if action.icon %}
+                      <div class="w-4 h-4">{% include action.icon + '.svg' %}</div>
+                    {% else %}
+                      ⋯
+                    {% endif %}
+                  </a>
                 {% endfor %}
               </div>
             </td>
@@ -103,7 +110,7 @@
           <span class="font-medium">{{ total_items }}</span> kết quả
         </p>
         <div>
-          <select name="page_size" form="table-controls" hx-get="{{ data_url }}" hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
+          <select name="page_size" form="table-controls" hx-get="{{ data_url }}" hx-include="#table-controls" hx-vals='{"page": 1, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}"}' hx-target="#table-body" hx-push-url="false"
                   class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             <option value="10" {% if page_size|int == 10 %}selected{% endif %}>10 dòng/trang</option>
             <option value="25" {% if page_size|int == 25 %}selected{% endif %}>25 dòng/trang</option>
@@ -115,19 +122,19 @@
       <div>
         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
           <a hx-get="{{ data_url }}"
-             hx-vals='{"page": {{ current_page|int - 1 if current_page|int > 1 else 1 }} }'
+             hx-vals='{"page": {{ current_page|int - 1 if current_page|int > 1 else 1 }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
              hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if current_page|int <= 1 %}pointer-events-none opacity-50{% endif %}">«</a>
   
           {% for page in visible_pages %}
             <a hx-get="{{ data_url }}"
-               hx-vals='{"page": {{ page }} }'
+               hx-vals='{"page": {{ page }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
                hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium {% if page == current_page %}z-10 bg-blue-50 border-blue-500 text-blue-600{% else %}bg-white border-gray-300 text-gray-500 hover:bg-gray-50{% endif %}">{{ page }}</a>
           {% endfor %}
   
           <a hx-get="{{ data_url }}"
-             hx-vals='{"page": {{ current_page|int + 1 if current_page|int < total_pages|int else total_pages }} }'
+             hx-vals='{"page": {{ current_page|int + 1 if current_page|int < total_pages|int else total_pages }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
              hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if current_page|int >= total_pages|int %}pointer-events-none opacity-50{% endif %}">»</a>
         </nav>
