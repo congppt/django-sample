@@ -3,13 +3,6 @@ from django import template
 register = template.Library()
 
 @register.filter
-def get_attribute(object, key):
-    """Get item from dictionary by key"""
-    if isinstance(object, dict):
-        return object.get(key, '')
-    return getattr(object, key, '')
-
-@register.filter
 def get_badge_color(value):
     """Get appropriate badge color based on value"""
     color_map = {

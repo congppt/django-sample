@@ -1,0 +1,64 @@
+{# Jinja2 template - HTMX-driven table component #}
+
+<div id="table-component" class="bg-white shadow-sm rounded-lg border border-gray-200" hx-target="this"
+    hx-swap="outerHTML">
+    <div class="px-6">
+        <h1 class="text-4xl font-semibold my-4">{{ table_title }}</h1>
+
+        <form id="table-controls" class="my-2 grid grid-cols-3 gap-4" hx-get="{{ data_url }}" hx-target="#table-body"
+            hx-push-url="false" hx-trigger="change">
+            <div class="col-span-3">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div class="w-4 h-4 text-gray-400">{% include 'search.svg' %}</div>
+                    </div>
+                    <input type="text" name="search" value="{{ search|default('') }}" hx-get="{{ data_url }}"
+                        hx-target="#table-body" hx-include="#table-controls" hx-vals='{"page": 1}' hx-push-url="false"
+                        hx-trigger="keyup changed delay:800ms"
+                        class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Tìm kiếm...">
+                </div>
+            </div>
+
+            {# Dynamic filters #}
+            {% for filter in table_filters|default([]) %}
+            <div>
+                {% if filter.type == 'select' %}
+                <select name="{{ filter.name }}" hx-trigger="change"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    {% for option in filter.options %}
+                    <option value="{{ option.value }}" {% if option.value==request.GET.get(filter.name) %}selected{%
+                        endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+                {% elif filter.type == 'number' %}
+                <input type="number" name="{{ filter.name }}" value="{{ request.GET.get(filter.name, '') }}"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                {% elif filter.type == 'date' %}
+                <input type="date" name="{{ filter.name }}" value="{{ request.GET.get(filter.name, '') }}"
+                    hx-trigger="change"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                {% elif filter.type == 'datetime' %}
+                <input type="datetime-local" name="{{ filter.name }}" value="{{ request.GET.get(filter.name, '') }}"
+                    hx-trigger="change"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                {% elif filter.type == 'boolean' %}
+                <select name="{{ filter.name }}" hx-trigger="change"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="true" {% if request.GET.get(filter.name)=='true' %}selected{% endif %}>True</option>
+                    <option value="false" {% if request.GET.get(filter.name)=='false' %}selected{% endif %}>False
+                    </option>
+                </select>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {# Persist paging/sort in form #}
+            <input type="hidden" name="page" value="{{ current_page|default(1) }}">
+            <input type="hidden" name="page_size" value="{{ page_size|default(25) }}">
+            <input type="hidden" name="sort" value="{{ sort|default('') }}">
+            <input type="hidden" name="sort_direction" value="{{ sort_direction|default('asc') }}">
+        </form>
+    </div>
+    {% include 'templates/components/table.html' %}
+</div>

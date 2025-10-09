@@ -1,8 +1,8 @@
 {# Jinja2 template - no need for load statements #}
 <div>
     <input type="checkbox" id="nav-rail-toggle" class="hidden peer">
-<aside class="w-24 h-screen bg-white border-r border-gray-200
-           transition-all duration-200 ease-in-out overflow-hidden flex flex-col
+<aside class="sticky top-0 z-10 w-16 h-screen bg-white border-r border-gray-200
+           transition-all duration-200 ease-in-out overflow-auto flex flex-col
 
            /* Set common rules for each nav link to avoid layout shift */
            [&_.nav-link]:h-12 [&_.nav-link]:flex [&_.nav-link]:items-center [&_.nav-link]:justify-center [&_.nav-link]:px-4
@@ -16,9 +16,17 @@
            hover:[&_.nav-link]:justify-start
            hover:[&_.nav-label]:w-[14rem] hover:[&_.nav-label]:opacity-100 hover:[&_.nav-label]:ml-2">
 
-    <nav class="space-y-1">
+    <nav>
+        {% set nav_items = [
+            {
+                'name': 'Trang chủ',
+                'url': 'home',
+                'icon': 'user.svg',
+            },
+        ] %}
         {% for item in nav_items %}
-        <a href="{{ item.url }}" class="nav-link rounded-none mt-2 text-orange-400 border-r-3 border-orange-400 hover:text-orange-500 bg-orange-50 hover:bg-orange-100">
+        {% set color = 'orange' if request.path == (url(item.url) or default(item.url)) else 'gray' %}
+        <a href="{{ url(item.url)|default(item.url) }}" class="nav-link rounded-none text-{{ color }}-400 {{ color == 'orange' and 'border-r-3 border-{{ color }}-400' or '' }} hover:text-{{ color }}-500 bg-{{ color }}-50 hover:bg-{{ color }}-100">
             <!-- icon: fixed size, won't shift -->
             <span class="w-6 h-6 flex-shrink-0">{% include item.icon %}</span>
 
@@ -26,12 +34,6 @@
             <span class="nav-label text-md font-medium">{{ item.name }}</span>
         </a>
         {% endfor %}
-
-        <!-- static settings example -->
-        <a href="#" class="nav-link rounded-none mt-2 text-orange-400 border-r-3 border-orange-400 hover:text-orange-500 bg-orange-50 hover:bg-orange-100">
-            <span class="w-6 h-6 flex-shrink-0 ">{% include 'setting.svg' %}</span>
-            <span class="nav-label text-md font-medium">Cài đặt</span>
-        </a>
     </nav>
 </aside>
 </div>
