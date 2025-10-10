@@ -7,6 +7,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js"></script>
+  <script>
+    function filterHTMXSwap(event, element, callback) {
+      console.log(event.detail.target.id)
+      console.log(element.getAttribute('hx-target') )
+      if (element.getAttribute('hx-target') === "#" + event.detail.target.id) {
+        callback();
+      }
+    }
+  </script>
   <title>Sample - {% block title %}{% endblock %}</title>
   {% block styles %}
   {% endblock %}
