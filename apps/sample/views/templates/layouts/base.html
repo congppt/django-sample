@@ -9,8 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js"></script>
   <script>
     function filterHTMXSwap(event, element, callback) {
-      console.log(event.detail.target.id)
-      console.log(element.getAttribute('hx-target') )
       if (element.getAttribute('hx-target') === "#" + event.detail.target.id) {
         callback();
       }

@@ -1,39 +1,46 @@
 {# Jinja2 template - no need for load statements #}
 <div>
     <input type="checkbox" id="nav-rail-toggle" class="hidden peer">
-<aside class="sticky top-0 z-10 w-16 h-screen bg-white border-r border-gray-200
+    <aside
+        class="sticky inset-y-16 z-10 w-16 h-screen bg-white border-r border-gray-200
            transition-all duration-200 ease-in-out overflow-auto flex flex-col
 
            /* Set common rules for each nav link to avoid layout shift */
-           [&_.nav-link]:h-12 [&_.nav-link]:flex [&_.nav-link]:items-center [&_.nav-link]:justify-center [&_.nav-link]:px-4
+          
 
            /* initial state for label (collapsed) */
            [&_.nav-label]:w-0 [&_.nav-label]:opacity-0 [&_.nav-label]:overflow-hidden [&_.nav-label]:whitespace-nowrap
            [&_.nav-label]:transition-all [&_.nav-label]:duration-200
 
            /* expanded state when peer (checkbox) is checked */
-           hover:w-64
-           hover:[&_.nav-link]:justify-start
-           hover:[&_.nav-label]:w-[14rem] hover:[&_.nav-label]:opacity-100 hover:[&_.nav-label]:ml-2">
+           peer-checked:w-64
+           peer-checked:[&_.nav-label]:w-[14rem] peer-checked:[&_.nav-label]:opacity-100 peer-checked:[&_.nav-label]:ml-2">
 
-    <nav>
-        {% set nav_items = [
+        <nav>
+            <label for="nav-rail-toggle" class="fixed top-5 left-5"><div class="w-6 h-6">{% include 'menu.svg' %}</div></label>
+            {% set nav_items = [
             {
-                'name': 'Trang chủ',
-                'url': 'home',
-                'icon': 'user.svg',
+            'name': 'Trang chủ',
+            'url': 'home',
+            'icon': 'dashboard.svg',
             },
-        ] %}
-        {% for item in nav_items %}
-        {% set color = 'orange' if request.path == (url(item.url) or default(item.url)) else 'gray' %}
-        <a href="{{ url(item.url)|default(item.url) }}" class="nav-link rounded-none text-{{ color }}-400 {{ color == 'orange' and 'border-r-3 border-{{ color }}-400' or '' }} hover:text-{{ color }}-500 bg-{{ color }}-50 hover:bg-{{ color }}-100">
-            <!-- icon: fixed size, won't shift -->
-            <span class="w-6 h-6 flex-shrink-0">{% include item.icon %}</span>
+            {
+                'name': 'Demo',
+                'url': 'table_demo',
+                'icon': 'report.svg',
+            }
+            ] %}
+            {% for item in nav_items %}
+            {% set color = 'orange' if request.path == (url(item.url) or default(item.url)) else 'gray' %}
+            <a href="{{ url(item.url)|default(item.url) }}"
+                class="rounded-none h-12 flex items-center justify-center px-4 border-r-3 border-transparent text-{{ color }}-400 {{ color == 'orange' and 'border-'+ color+'-400!' or '' }} peer-checked:text-{{ color }}-500 bg-{{ color }}-50 peer-checked:bg-{{ color }}-100">
+                <!-- icon: fixed size, won't shift -->
+                <span class="w-6 h-6 flex-shrink-0">{% include item.icon %}</span>
 
-            <!-- label: .nav-label được điều khiển qua selector ở <aside> -->
-            <span class="nav-label text-md font-medium">{{ item.name }}</span>
-        </a>
-        {% endfor %}
-    </nav>
-</aside>
+                <!-- label: .nav-label được điều khiển qua selector ở <aside> -->
+                <span class="nav-label text-md font-medium">{{ item.name }}</span>
+            </a>
+            {% endfor %}
+        </nav>
+    </aside>
 </div>
