@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from django.urls import reverse
+from django.http import FileResponse
 from datetime import date, datetime, timedelta
+import csv
+import io
 
 
 def _paginate(total_items: int, page: int, page_size: int):
@@ -124,6 +127,7 @@ def _common_context(request):
         'request': request,  # allow request.GET in template
         'table_title': 'HTMX Table Demo',
         'data_url': reverse('table_demo_partial'),
+        'export_url': reverse('table_demo_export'),
         'table_columns': table_columns,
         'table_row_actions': [
             { 'label': 'View', 'href': '/users/{id}', 'icon': 'eye', 'color': 'blue' },
@@ -171,5 +175,79 @@ def page(request):
 def partial(request):
     context = _common_context(request)
     return render(request, 'templates/components/table.html', context)
+
+
+def export(request):
+    """Export endpoint - handles both HTMX redirect and direct file download"""
+    # Check if this is an HTMX request
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    
+    if is_htmx:
+        # HTMX request - redirect to the same endpoint for file download
+        from django.http import HttpResponse
+        
+        # Build the download URL with all current parameters
+        params = request.GET.urlencode()
+        download_url = request.build_absolute_uri() + '?' + params
+        
+        # Return empty response with HX-Redirect header
+        response = HttpResponse()
+        response['HX-Redirect'] = download_url
+        return response
+    
+    # Direct file download request
+    # Get filtered data (same logic as _common_context but without pagination)
+    search = request.GET.get('search', '')
+    status = request.GET.get('status', '')
+    min_age = request.GET.get('min_age', '')
+    max_age = request.GET.get('max_age', '')
+    sort = request.GET.get('sort') or ''
+    sort_direction = request.GET.get('sort_direction', 'asc')
+    
+    all_rows = _filter_sort_rows(_mock_rows(), search, sort, sort_direction, status, min_age, max_age)
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    headers = ['ID', 'Name', 'Username', 'Email', 'Phone', 'Status', 'Age', 'City', 'Country', 
+               'Department', 'Role', 'Company', 'Address', 'Registered On', 'Last Login', 
+               'Balance', 'Active', 'Score']
+    writer.writerow(headers)
+    
+    # Write data rows
+    for row in all_rows:
+        writer.writerow([
+            row['id'],
+            row['name'],
+            row['username'],
+            row['email'],
+            row['phone'],
+            row['status'],
+            row['age'],
+            row['city'],
+            row['country'],
+            row['department'],
+            row['role'],
+            row['company'],
+            row['address'],
+            row['registered_on'].strftime('%Y-%m-%d'),
+            row['last_login'].strftime('%Y-%m-%d %H:%M'),
+            row['balance'],
+            'Yes' if row['active'] else 'No',
+            row['score']
+        ])
+    
+    # Create file-like object from CSV content
+    csv_content = output.getvalue()
+    output.close()
+    
+    # Create FileResponse
+    file_obj = io.BytesIO(csv_content.encode('utf-8'))
+    response = FileResponse(file_obj, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="table_export.csv"'
+    
+    return response
 
 
