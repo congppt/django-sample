@@ -78,7 +78,7 @@
               <div class="flex items-center justify-center gap-2">
                 {% for action in table_row_actions %}
                   {% set href = (url(action.url, kwargs={'id':row.id}) if action.url else '#') %}
-                  <a {% if action.hx %}hx-get="{{ href }}" hx-target="#modal-content" hx-swap="innerHTML" hx-push-url="false" @htmx:after-swap.document.once="filterHTMXSwap($event, $el,() => {modalOpen = true})" href="#"{% else %}href="{{ href }}" target="_blank"{% endif %} title="{{ action.label }}" class="inline-flex p-1.5 border border-transparent rounded-full text-{{ action.color or 'gray' }}-600 hover:text-{{ action.color or 'gray' }}-900 hover:bg-{{ action.color or 'gray' }}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ action.color or 'gray' }}-500 transition-colors duration-200">
+                  <a {% if action.hx %}hx-get="{{ href }}" hx-target="#modal-content" hx-swap="innerHTML" hx-push-url="false" @htmx:after-swap.document="filterHTMXSwap($event, $el,() => {modalOpen = true})" href="#"{% else %}href="{{ href }}" target="_blank"{% endif %} title="{{ action.label }}" class="inline-flex p-1.5 border border-transparent rounded-full text-{{ action.color or 'gray' }}-600 hover:text-{{ action.color or 'gray' }}-900 hover:bg-{{ action.color or 'gray' }}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ action.color or 'gray' }}-500 transition-colors duration-200">
                     {% if action.icon %}
                       <div class="w-4 h-4">{% include action.icon + '.svg' %}</div>
                     {% else %}
