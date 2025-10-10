@@ -3,6 +3,13 @@
 {% block title %}Table Demo{% endblock %}
 
 {% block content %}
+<div class="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+  <p>Debug: Alpine.js test</p>
+  <button @click="modalOpen = true" class="px-4 py-2 bg-red-500 text-white rounded mr-2">
+    Test Modal (Red Button)
+  </button>
+  <span x-text="modalOpen ? 'Modal is OPEN' : 'Modal is CLOSED'" class="font-bold">Modal is CLOSED</span>
+</div>
 {% include 'templates/components/table_ext.html' %}
 {% endblock %}
 

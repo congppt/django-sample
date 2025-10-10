@@ -13,7 +13,7 @@
 
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-gray-50" x-data="{ modalOpen: false }">
   <!-- Header -->
   {% include 'templates/components/header.html' %}
   <!-- Main Content -->
@@ -25,6 +25,9 @@
       {% endblock %}
     </div>
   </main>
+
+  <!-- Global Modal -->
+  {% include 'templates/components/modal.html' %}
 
 </body>
 {% block scripts %}
