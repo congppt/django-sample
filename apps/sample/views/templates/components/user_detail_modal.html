@@ -1,0 +1,14 @@
+{% extends 'templates/components/modal_content.html' %}
+
+{% block modal_content %}
+  <div class="space-y-3">
+    <div class="flex items-center justify-between"><span class="text-gray-500">Name</span><span class="font-medium">{{ user.name }}</span></div>
+    <div class="flex items-center justify-between"><span class="text-gray-500">Email</span><span class="font-medium">{{ user.email }}</span></div>
+    <div class="flex items-center justify-between"><span class="text-gray-500">Phone</span><span class="font-medium">{{ user.phone }}</span></div>
+    <div class="flex items-center justify-between"><span class="text-gray-500">Status</span><span class="font-medium">{{ user.status }}</span></div>
+  </div>
+{% endblock %}
+
+{% block modal_confirm %}OK{% endblock %}
+
+

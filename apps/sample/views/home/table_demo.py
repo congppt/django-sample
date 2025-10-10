@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.urls import reverse
 from django.http import FileResponse
+from django.http import Http404
 from datetime import date, datetime, timedelta
 import csv
 import io
@@ -130,9 +131,9 @@ def _common_context(request):
         'export_url': reverse('table_demo_export'),
         'table_columns': table_columns,
         'table_row_actions': [
-            { 'label': 'View', 'href': '/users/{id}', 'icon': 'eye', 'color': 'blue' },
-            { 'label': 'Edit', 'href': '/users/{id}/edit', 'icon': 'edit', 'color': 'green' },
-            { 'label': 'Delete', 'href': '/users/{id}/delete', 'icon': 'close', 'color': 'red' },
+            { 'label': 'View', 'url': 'table_demo_detail', 'icon': 'eye', 'color': 'blue', 'hx': True },
+            { 'label': 'Edit', 'url': '', 'icon': 'edit', 'color': 'green' },
+            { 'label': 'Delete', 'url': '', 'icon': 'close', 'color': 'red' },
         ],
         'bulk_actions': False,
         'table_filters': [
@@ -251,3 +252,26 @@ def export(request):
     return response
 
 
+# Backend-rendered modal content partial
+def modal_content(request):
+    ctx = { 'title': 'Modal Header Test' }
+    return render(request, 'templates/components/modal_content.html', ctx)
+
+
+
+# new view: detail
+def detail(request, id: int):
+    rows = _mock_rows()
+    row = next((r for r in rows if r['id'] == id), None)
+    if not row:
+        raise Http404('Record not found')
+    ctx = {
+        'title': f"User • {row['name']}",
+        'user': {
+            'name': row['name'],
+            'email': row['email'],
+            'phone': row['phone'],
+            'status': row['status'],
+        },
+    }
+    return render(request, 'templates/components/user_detail_modal.html', ctx)
