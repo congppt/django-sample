@@ -1,14 +1,14 @@
 {# Jinja2 template - no need for load statements #}
-<header class="bg-white shadow-md">
+<header class="sticky top-0 z-10 bg-white shadow-md">
   <div class="mx-auto px-4 sm:px-6 lg:px-8">
     <div class="relative flex justify-end h-16">
       <!-- Logo Placeholder -->
-      <a href="/" class="absolute left-1/2 -translate-x-1/2 translate-y-full"><img
+      <a href="{{ url('home') }}" class="absolute left-1/2 -translate-x-1/2 translate-y-full"><img
           src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-1/2 w-auto"></a>
       <!-- User Section -->
       <div class="flex items-center space-x-4">
         {% set user = request.user %}
-        {% if not user.is_authenticated %}
+        {% if user.is_authenticated %}
         <!-- Authenticated User: Greeting + Context Menu -->
         <!-- Greeting -->
         <div class="hidden md:block text-sm">

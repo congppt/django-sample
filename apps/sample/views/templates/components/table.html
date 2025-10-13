@@ -2,7 +2,7 @@
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
-        class="sticky top-0 z-10 bg-slate-500 text-gray-50 text-xs font-medium uppercase tracking-wider cursor-pointer whitespace-nowrap">
+        class="sticky top-0 bg-slate-500 text-gray-50 text-xs font-medium uppercase tracking-wider cursor-pointer whitespace-nowrap">
         <tr>
           {% if bulk_actions %}
           <th class="py-3 px-6">
@@ -30,7 +30,7 @@
           {% endfor %}
 
           {% if table_row_actions and table_row_actions|length > 0 %}
-          <th scope="col" class="sticky right-0 py-3 px-6 text-center bg-slate-500">Thao tác</th>
+          <th scope="col" class="sticky top-0 right-0 py-3 px-6 text-center bg-slate-500">Thao tác</th>
           {% endif %}
         </tr>
       </thead>
