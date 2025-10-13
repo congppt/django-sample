@@ -2,7 +2,7 @@
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
-        class="sticky top-0 z-10 bg-slate-500 text-gray-50 text-xs font-medium uppercase tracking-wider cursor-pointer">
+        class="sticky top-0 z-10 bg-slate-500 text-gray-50 text-xs font-medium uppercase tracking-wider cursor-pointer whitespace-nowrap">
         <tr>
           {% if bulk_actions %}
           <th class="py-3 px-6">
@@ -12,21 +12,20 @@
 
           {% for column in table_columns %}
           <th scope="col" class="py-3 px-6">
-            <div class="flex items-center space-x-1 justify-center">
-              <span>{{ column.label or column.name }}</span>
               {% if column.sortable %}
               <a hx-get="{{ data_url }}" hx-include="#table-controls"
-                hx-vals='{"sort": "{{ column.name }}", "sort_direction": "{% if sort == column.name and sort_direction == '
-                asc' %}desc{% else %}asc{% endif %}"}' hx-target="#table-body" hx-push-url="false"
-                class="ml-1 underline">
+                hx-vals='{"sort": "{{ column.name }}", "sort_direction": "{{ "desc" if sort == column.name and sort_direction == "asc" else "asc" }}"}' hx-target="#table-body" hx-push-url="false"
+                class="ml-1">
+                {{ column.label or column.name }}
                 {% if sort == column.name %}
                 {% if sort_direction == 'asc' %}▲{% else %}▼{% endif %}
                 {% else %}
                 ⇅
                 {% endif %}
               </a>
+              {% else %}
+              <span>{{ column.label or column.name }}</span>
               {% endif %}
-            </div>
           </th>
           {% endfor %}
 
