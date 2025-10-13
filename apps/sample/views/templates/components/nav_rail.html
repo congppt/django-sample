@@ -1,8 +1,7 @@
 {# Jinja2 template - no need for load statements #}
 <input type="checkbox" id="nav-rail-toggle" class="hidden peer" checked>
-<aside
-    class="fixed z-15 top-16 h-[calc(100%-var(--spacing)*16)] w-16 bg-white shadow-md
-           transition-all duration-200 ease-in-out overflow-auto flex flex-col
+<aside class="fixed z-15 h-full w-16 bg-white shadow-md
+           transition-all duration-200 ease-in-out overflow-auto
 
            /* Set common rules for each nav link to avoid layout shift */
           
@@ -13,12 +12,15 @@
 
            /* expanded state when peer (checkbox) is checked */
            peer-checked:w-64
-           peer-checked:[&_.nav-label]:w-[14rem] peer-checked:[&_.nav-label]:opacity-100 peer-checked:[&_.nav-label]:ml-2">
+           peer-checked:[&_.nav-label]:w-fit peer-checked:[&_.nav-label]:opacity-100 peer-checked:[&_.nav-label]:ml-2">
 
-    <nav>
-        <label for="nav-rail-toggle"
-            class="flex items-center h-12 px-4">
-            <div class="w-6 h-6">{% include 'menu.svg' %}</div>
+    <nav class="w-full">
+        <label for="nav-rail-toggle" class="flex items-center h-16 px-4">
+            <div class="w-6 h-6 flex-shrink-0">{% include 'menu.svg' %}</div>
+            <!-- Logo Placeholder -->
+            <a href="{{ url('home') }}" class="nav-label m-auto!">
+                <img src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone">
+            </a>
         </label>
         {% set nav_items = [
         {

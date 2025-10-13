@@ -20,24 +20,18 @@
 
 </head>
 
-<body class="bg-gray-50" x-data="{ modalOpen: false }">
-  <!-- Header -->
-  {% if not request.user.is_authenticated %}
-  {% include 'templates/components/header.html' %}
-  {% endif %}
-  <!-- Main Content -->
-  <main>
-    <!-- Nav Rail -->
+<body class="bg-gray-50 flex" x-data="{ modalOpen: false }">
     {% if not request.user.is_authenticated %}
+    <!-- Nav Rail -->
     {% include 'templates/components/nav_rail.html' %}
+    <!-- Header -->
+    {% include 'templates/components/header.html' %}
     {% endif %}
     <div
-      class="{{ 'ml-16 peer-checked:ml-64 transition-all duration-200 ease-in-out grow overflow-x-auto ' if not request.user.is_authenticated else '' }}py-6 sm:px-6 lg:px-8">
+      class="{{ 'ml-16 mt-16 peer-checked:ml-64 transition-all duration-200 ease-in-out grow overflow-x-auto ' if not request.user.is_authenticated else '' }} py-6 sm:px-6 lg:px-8">
       {% block content %}
       {% endblock %}
     </div>
-  </main>
-
   <!-- Global Modal -->
   {% include 'templates/components/modal.html' %}
 
