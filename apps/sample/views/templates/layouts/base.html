@@ -24,10 +24,10 @@
   <!-- Header -->
   {% include 'templates/components/header.html' %}
   <!-- Main Content -->
-  <main class="flex">
+  <main>
     <!-- Nav Rail -->
     {% include 'templates/components/nav_rail.html' %}
-    <div class="grow overflow-x-auto py-6 sm:px-6 lg:px-8">
+    <div class="ml-16 peer-checked:ml-64 transition-all duration-200 ease-in-out grow overflow-x-auto py-6 sm:px-6 lg:px-8">
       {% block content %}
       {% endblock %}
     </div>

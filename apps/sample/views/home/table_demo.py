@@ -251,14 +251,6 @@ def export(request):
     
     return response
 
-
-# Backend-rendered modal content partial
-def modal_content(request):
-    ctx = { 'title': 'Modal Header Test' }
-    return render(request, 'templates/components/modal_content.html', ctx)
-
-
-
 # new view: detail
 def detail(request, id: int):
     rows = _mock_rows()
@@ -266,7 +258,7 @@ def detail(request, id: int):
     if not row:
         raise Http404('Record not found')
     ctx = {
-        'title': f"User • {row['name']}",
+        'title': f"User - {row['name']}",
         'user': {
             'name': row['name'],
             'email': row['email'],
@@ -274,4 +266,4 @@ def detail(request, id: int):
             'status': row['status'],
         },
     }
-    return render(request, 'templates/components/user_detail_modal.html', ctx)
+    return render(request, 'home/detail_demo.html', ctx)
