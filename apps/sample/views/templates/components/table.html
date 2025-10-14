@@ -63,7 +63,7 @@
             {% elif column.type == 'datetime' %}
             <span>{{ value|strftime('%d/%m/%Y %H:%M') }}</span>
             {% elif column.type == 'currency' %}
-            <span>{{ value }}</span>
+            <span>{{ value|currency }}</span>
             {% elif column.type == 'number' %}
             <span>{{ value }}</span>
             {% elif column.type == 'boolean' %}

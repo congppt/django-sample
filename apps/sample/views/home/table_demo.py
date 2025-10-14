@@ -57,7 +57,7 @@ def _mock_rows():
             'address': f'{100 + i} Main St',
             'registered_on': date.today() - timedelta(days=i % 365),
             'last_login': datetime.now() - timedelta(days=i % 30, hours=i % 24),
-            'balance': f"${(i * 13) % 10000}.{(i * 37) % 100:02d}",
+            'balance': (i * 13) * 1000 + (i * 37) * 1000,
             'active': (i % 2 == 0),
             'score': (i * 7) % 100,
         })

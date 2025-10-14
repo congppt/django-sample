@@ -1,4 +1,7 @@
-Django
+Django # psycopg, .env loading, jinja2 not included
 uvicorn
 Jinja2
-pydantic
+pydantic # serialization
+loguru
+python-dotenv # no need for uvicorn deployment
+psycopg[binary,pool] # prebuilt, pool compatible

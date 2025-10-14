@@ -392,3 +392,4 @@ tags
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/django,python,visualstudiocode,jetbrains+all,vim
+logs
