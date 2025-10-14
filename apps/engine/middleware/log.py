@@ -73,8 +73,8 @@ class LoggingMiddleware:
                     elif isinstance(data, list):
                         return [filter_sensitive_data(item) for item in data]
                     return data
-
                 extra["body"] = filter_sensitive_data(parsed_body)
         process_duration = time.perf_counter() - start
-        log("",extra={"duration": process_duration})
+        extra["duration"] = process_duration
+        log("",extra=extra)
         return response
