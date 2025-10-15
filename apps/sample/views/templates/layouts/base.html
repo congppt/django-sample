@@ -21,14 +21,14 @@
 </head>
 
 <body class="bg-gray-50 flex" x-data="{ modalOpen: false }">
-    {% if not request.user.is_authenticated %}
+    {% if request.user.is_authenticated %}
     <!-- Nav Rail -->
     {% include 'templates/components/nav_rail.html' %}
     <!-- Header -->
     {% include 'templates/components/header.html' %}
     {% endif %}
     <div
-      class="{{ 'ml-16 mt-16 peer-checked:ml-64 transition-all duration-200 ease-in-out grow overflow-x-auto ' if not request.user.is_authenticated else '' }} py-6 sm:px-6 lg:px-8">
+      class="{{ 'ml-16 peer-checked:ml-64 transition-all duration-200 ease-in-out pt-22 pb-6 px-4 lg:px-8' if request.user.is_authenticated else '' }}min-h-screen grow overflow-x-auto">
       {% block content %}
       {% endblock %}
     </div>

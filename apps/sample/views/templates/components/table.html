@@ -29,14 +29,14 @@
           </th>
           {% endfor %}
 
-          {% if table_row_actions and table_row_actions|length > 0 %}
+          {% if table_row_actions|length > 0 %}
           <th scope="col" class="sticky right-0 py-3 px-6 text-center bg-slate-500">Thao tác</th>
           {% endif %}
         </tr>
       </thead>
 
       <tbody class="bg-white divide-y divide-gray-200">
-        {% if table_data and table_data|length > 0 %}
+        {% if table_data|length > 0 %}
         {% for row in table_data %}
         <tr
           class="transition-colors duration-150 hover:bg-gray-200 group divide-x divide-gray-200 {% if loop.index0 % 2 == 0 %}bg-gray-100{% else %}bg-white{% endif %}">
@@ -75,7 +75,7 @@
           </td>
           {% endfor %}
 
-          {% if table_row_actions and table_row_actions|length > 0 %}
+          {% if table_row_actions|length > 0 %}
           <td class="px-6 py-4 sticky right-0 {% if loop.index0 % 2 == 0 %}bg-gray-100{% else %}bg-white{% endif %}">
             <div class="flex items-center justify-center gap-2">
               {% for action in table_row_actions %}
@@ -99,7 +99,7 @@
         {% else %}
         <tr>
           <td
-            colspan="{{ table_columns|length + (1 if bulk_actions else 0) + (1 if table_row_actions and table_row_actions|length > 0 else 0) }}"
+            colspan="{{ table_columns|length + (1 if bulk_actions else 0) + (1 if table_row_actions|length > 0 else 0) }}"
             class="px-6 py-12 text-center text-gray-500">Không có dữ liệu</td>
         </tr>
         {% endif %}
@@ -110,7 +110,7 @@
   <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
     <div class="flex items-center space-x-2">
       <p class="text-sm text-gray-700">
-        Hiển thị kết quả thứ
+        Hiển thị
         <span class="font-medium">{{ start_item }}</span> -
         <span class="font-medium">{{ end_item }}</span> trong tổng số
         <span class="font-medium">{{ total_items }}</span> kết quả

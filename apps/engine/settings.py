@@ -98,6 +98,9 @@ DATABASES = {
         'HOST': env.DB_HOST,
         'PORT': env.DB_PORT,
         'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': {
+            'pool': True,
+        }
     }
 }
 
