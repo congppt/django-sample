@@ -5,6 +5,6 @@ from django.urls import reverse
 
 def home(request):
     if not request.user.is_authenticated:
-        return HttpResponseRedirect(reverse('login'))
+        return HttpResponseRedirect(reverse('sign_in'))
     return render(request, 'home/home.html')
 

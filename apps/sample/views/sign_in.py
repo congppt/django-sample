@@ -5,7 +5,7 @@ from django.views.generic import FormView
 from django.contrib import messages
 
 
-class LoginForm(forms.Form):
+class SignInForm(forms.Form):
     username = forms.CharField(
         max_length=100,
         widget=forms.TextInput(attrs={
@@ -46,9 +46,9 @@ class LoginForm(forms.Form):
         return cleaned_data
 
 
-class LoginView(FormView):
-    template_name = 'login.html'
-    form_class = LoginForm
+class SignInView(FormView):
+    template_name = 'sign_in.html'
+    form_class = SignInForm
     success_url = reverse_lazy('home')
 
     def form_valid(self, form):
@@ -59,11 +59,8 @@ class LoginView(FormView):
         login(self.request, user)
         
         # Set session expiry based on remember me checkbox
-        if not remember:
-            self.request.session.set_expiry(0)  # Session expires when browser closes
-        else:
-            self.request.session.set_expiry(60 * 60 * 24 * 30)  # 30 days
-        
+        self.request.session.set_expiry(60 * 60 * 24 * 30 if remember else 0)  # 30 days
+
         messages.success(self.request, f'Welcome back, {user.username}!')
         return super().form_valid(form)
 

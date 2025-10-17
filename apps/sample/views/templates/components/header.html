@@ -1,60 +1,100 @@
-{# Jinja2 template - no need for load statements #}
-<header
-  class="fixed top-0 z-20 ml-16 peer-checked:ml-64 h-16 bg-white shadow-md px-4 sm:px-6 lg:px-8 flex flex-col justify-center w-[calc(100%-var(--spacing)*16)] peer-checked:w-[calc(100%-var(--spacing)*64)] transition-all duration-200 ease-in-out">
-  <div class="flex items-center justify-end relative">
-    <!-- User Section -->
-    <div class="flex items-center space-x-4">
-      {% set user = request.user %}
-      {% if user.is_authenticated %}
-      <!-- Authenticated User: Greeting + Context Menu -->
-      <!-- Greeting -->
-      <div class="hidden md:block text-sm">
-        <span class="text-gray-600">Welcome, </span>
-        <span class="font-medium text-gray-900">
-          {{ user.get_full_name|default(user.username) }}
-        </span>
-      </div>
-
-      <!-- User Context Menu -->
-      <div class="relative group">
-        <!-- User Avatar/Button -->
-        <button
-          class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-          <!-- <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span class="text-sm font-medium text-gray-700">
-                    {{ user.get_full_name|default(user.username)|first|upper }}
-                  </span>
-                </div> -->
-          <div class="w-4 h-4">{% include 'angle-down.svg' %}</div>
-        </button>
-
-        <!-- Dropdown Menu -->
-        <div
-          class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-in-out transform scale-95 group-hover:scale-100 group-focus:opacity-100 group-focus:visible group-focus:scale-100">
-          {% set menu_styling = 'px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center' %}
-          <!-- Profile Link -->
-          <a href="#" class="{{ menu_styling }}">
-            <div class="w-4 h-4">{% include 'user.svg' %}</div>
-            <span class="ml-2">Thông tin cá nhân</span>
-          </a>
-
-          <!-- Settings Link -->
-          <a href="#" class="{{ menu_styling }}">
-            <div class="w-4 h-4">{% include 'lock.svg' %}</div>
-            <span class="ml-2">Đổi mật khẩu</span>
-          </a>
-
-          <!-- Divider -->
-          <div class="border-t border-gray-100 my-1"></div>
-
-          <!-- Logout Link -->
-          <a href="#" class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
-            <div class="w-4 h-4">{% include 'sign-out.svg' %}</div>
-            <span class="ml-2">Đăng xuất</span>
-          </a>
-        </div>
+{# Top Header Component #}
+<header class="fixed right-0 z-20 transition-all ease-in-out w-full lg:w-[calc(100%-var(--spacing)*16)] bg-white shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-6"
+:class="sidebarOpen ? 'lg:w-[calc(100%-var(--spacing)*64)]!' : ''"
+>
+  
+  {# Mobile Menu Button #}
+  <button @click="sidebarOpen = true" 
+          class="lg:hidden flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors">
+    <div class="w-6 h-6">
+      {% include 'menu.svg' %}
+    </div>
+  </button>
+  
+  {# Breadcrumbs #}
+  <div class="hidden lg:flex items-center space-x-2">
+    <h1 class="text-xl font-semibold text-gray-900">{{ page_title|default('Dashboard') }}</h1>
+    {% if breadcrumbs %}
+    <nav class="flex items-center space-x-1 text-sm text-gray-500">
+      {% for breadcrumb in breadcrumbs %}
+      <span>{% if not loop.last %}<a href="{{ breadcrumb.url }}" class="hover:text-gray-700">{{ breadcrumb.name }}</a>{% else %}{{ breadcrumb.name }}{% endif %}</span>
+      {% if not loop.last %}
+      <div class="w-4 h-4">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
       </div>
       {% endif %}
+      {% endfor %}
+    </nav>
+    {% endif %}
+  </div>
+
+  {# Header Actions #}
+  <div class="flex items-center space-x-4">
+    
+    <!-- {# Search Bar #}
+    <div class="hidden md:block relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div class="w-4 h-4 text-gray-500">
+          {% include 'search.svg' %}
+        </div>
+      </div>
+      <input type="text" 
+             placeholder="Tìm kiếm..." 
+             class="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
+    </div> -->
+    
+    <!-- {# Notifications #}
+    <button class="relative p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-md">
+      <div class="w-5 h-5">
+        {% include 'bell.svg' %}
+      </div>
+      <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
+    </button> -->
+
+    {# User Menu #}
+    {% set user = request.user %}
+    <div class="relative" x-data="{ open: false }">
+      <button @click="open = !open" 
+              class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+        <div class="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+          <span class="text-sm font-bold text-white">
+            {{ (user.get_full_name() or user.username)[:1].upper() }}
+          </span>
+        </div>
+        <div class="hidden lg:block ml-2 w-4 h-4 text-gray-400">
+          {% include 'angle-down.svg' %}
+        </div>
+      </button>
+
+      <div x-show="open" 
+           @click.away="open = false"
+           class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border border-gray-200 transition-opacity ease-in-out duration-300">
+        
+        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <div class="w-4 h-4 mr-3">
+            {% include 'user.svg' %}
+          </div>
+          Thông tin cá nhân
+        </a>
+        
+        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <div class="w-4 h-4 mr-3">
+            {% include 'setting.svg' %}
+          </div>
+          Cài đặt
+        </a>
+        
+        <div class="border-t border-gray-100 my-1"></div>
+        
+        <a href="{{ url('sign_out') }}" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+          <div class="w-4 h-4 mr-3">
+            {% include 'sign-out.svg' %}
+          </div>
+          Đăng xuất
+        </a>
+      </div>
     </div>
   </div>
 </header>

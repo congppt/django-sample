@@ -1,8 +1,5 @@
 <!-- Simple Modal Template with Alpine.js -->
-<div class="fixed inset-0 z-50 hidden" x-bind:class="modalOpen ? 'block!' : ''" x-show="modalOpen"
-     x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+<div class="fixed inset-0 z-50 hidden transition-opacity ease-in-out duration-300" x-bind:class="modalOpen ? 'block!' : ''" x-show="modalOpen">
      <!-- Backdrop -->
      <div class="fixed inset-0 bg-black opacity-70 transition-opacity duration-300" @click="modalOpen = false"></div>
 

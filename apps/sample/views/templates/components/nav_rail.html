@@ -1,49 +1,72 @@
-{# Jinja2 template - no need for load statements #}
-<input type="checkbox" id="nav-rail-toggle" class="hidden peer" checked>
-<aside class="fixed z-15 h-full w-16 bg-white shadow-md
-           transition-all duration-200 ease-in-out overflow-auto
+{# Mobile Backdrop #}
+<div x-show="sidebarOpen" 
+  class="fixed inset-0 z-19 bg-gray-100 opacity-90 lg:hidden"
+  @click="sidebarOpen = false"
+>
+</div>
 
-           /* Set common rules for each nav link to avoid layout shift */
-          
+{# Sidebar Navigation Component #}
+<aside class="fixed z-20 h-full w-0 lg:w-16 bg-white shadow-lg transition-all ease-in-out overflow-hidden" 
+        :class="sidebarOpen ? 'w-64!' : ''">
 
-           /* initial state for label (collapsed) */
-           [&_.nav-label]:w-0 [&_.nav-label]:opacity-0 [&_.nav-label]:overflow-hidden [&_.nav-label]:whitespace-nowrap
-           [&_.nav-label]:transition-all [&_.nav-label]:duration-200
+  {# Logo Section #}
+  <div class="flex items-center h-16 px-5 border-b border-gray-200">
+    <button @click="sidebarOpen = !sidebarOpen"
+      class="hidden lg:flex items-center rounded-md hover:bg-gray-100 transition-colors">
+      <div class="w-6 h-6">
+        {% include 'menu.svg' %}
+      </div>
+    </button>
 
-           /* expanded state when peer (checkbox) is checked */
-           peer-checked:w-64
-           peer-checked:[&_.nav-label]:w-fit peer-checked:[&_.nav-label]:opacity-100 peer-checked:[&_.nav-label]:ml-2">
+    <div class="transition-all" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 w-0'">
+      <div class="p-4 flex items-center">
+        <img src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-8">
+      </div>
+    </div>
+  </div>
 
-    <nav class="w-full">
-        <label for="nav-rail-toggle" class="flex items-center h-16 px-4">
-            <div class="w-6 h-6 flex-shrink-0">{% include 'menu.svg' %}</div>
-            <!-- Logo Placeholder -->
-            <a href="{{ url('home') }}" class="nav-label m-auto!">
-                <img src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone">
-            </a>
-        </label>
-        {% set nav_items = [
-        {
-        'name': 'Trang chủ',
-        'url': 'home',
-        'icon': 'dashboard.svg',
-        },
-        {
-        'name': 'Demo',
-        'url': 'table_demo',
-        'icon': 'report.svg',
-        }
-        ] %}
-        {% for item in nav_items %}
-        {% set color = 'orange' if request.path.startswith(url(item.url) or default(item.url)) else 'gray' %}
-        <a href="{{ url(item.url)|default(item.url) }}"
-            class="rounded-none h-12 flex items-center px-4 text-{{ color }}-400 {{ color == 'orange' and 'border-r-3 border-'+ color +'-400!' or '' }} peer-checked:text-{{ color }}-500 peer-checked:bg-{{ color }}-100">
-            <!-- icon: fixed size, won't shift -->
-            <span class="w-6 h-6 flex-shrink-0">{% include item.icon %}</span>
+  {# Navigation Menu #}
+  <nav class="py-6 px-2 space-y-1">
+    {% set nav_items = [
+    {
+    'name': 'Trang chủ',
+    'url': 'home',
+    'icon': 'dashboard.svg',
+    'badge': null,
+    'description': 'Tổng quan hệ thống'
+    },
+    {
+    'name': 'Demo Table',
+    'url': 'table_demo',
+    'icon': 'table.svg',
+    'badge': 'New',
+    'description': 'Demo component table'
+    }
+    ] %}
 
-            <!-- label: .nav-label được điều khiển qua selector ở <aside> -->
-            <span class="nav-label text-md font-medium">{{ item.name }}</span>
-        </a>
-        {% endfor %}
-    </nav>
+    {% for item in nav_items %}
+    {% set is_active = request.path.startswith(url(item.url)) %}
+    <a href="{{ url(item.url) }}"
+      class="flex items-center px-3 rounded-lg transition-all h-14
+                     {% if is_active %}bg-orange-100 text-orange-600{% else %}text-gray-600 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+
+      <div class="flex-shrink-0 w-6 h-6">
+        {% include item.icon %}
+      </div>
+
+      <div class="transition-all min-w-0 px-2" :class="sidebarOpen ? 'opacity-100' : 'opacity-0'">
+        <div class="flex items-center">
+          <span class="text-sm font-medium leading-tight truncate">{{ item.name }}</span>
+          {% if item.badge %}
+          <span
+            class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
+            {{ item.badge }}
+          </span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-gray-500 leading-tight mt-1.5 truncate">{{ item.description }}</p>
+      </div>
+    </a>
+    {% endfor %}
+  </nav>
 </aside>
