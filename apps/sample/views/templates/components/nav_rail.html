@@ -1,12 +1,12 @@
 {# Mobile Backdrop #}
 <div x-show="sidebarOpen" 
-  class="fixed inset-0 z-19 bg-gray-100 opacity-90 lg:hidden"
+  class="fixed inset-0 z-25 bg-gray-100 opacity-90 lg:hidden"
   @click="sidebarOpen = false"
 >
 </div>
 
 {# Sidebar Navigation Component #}
-<aside class="fixed z-20 h-full w-0 lg:w-16 bg-white shadow-lg transition-all ease-in-out overflow-hidden" 
+<aside class="fixed z-30 h-full w-0 lg:w-16 bg-white shadow-lg transition-all ease-in-out overflow-hidden" 
         :class="sidebarOpen ? 'w-64!' : ''">
 
   {# Logo Section #}

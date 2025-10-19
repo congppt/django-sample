@@ -5,6 +5,7 @@ from .sign_in import SignInView
 from .home import urls as home_urls
 from .user import urls as user_urls
 from .post import urls as post_urls
+from .table_demo import urls as table_demo_urls
 
 urlpatterns = [
     path('', HomeRedirectView.as_view(), name='root'),
@@ -13,4 +14,5 @@ urlpatterns = [
     path('home/', include(home_urls.__name__)),
     path('users/', include(user_urls.__name__)),
     path('posts/', include(post_urls.__name__)),
+    path('table-demo', include(table_demo_urls.__name__)),
 ]

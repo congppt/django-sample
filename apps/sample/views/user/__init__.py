@@ -94,7 +94,7 @@ class UserListPartialView(ListView):
     def get_context_data(self, **kwargs):
         request = self.request
         page = int(request.GET.get('page', '1') or 1)
-        page_size = int(request.GET.get('page_size', '25') or 25)
+        page_size = int(request.GET.get('page_size', '25'))
         search = request.GET.get('search', '')
         is_active = request.GET.get('is_active', '')
         sort = request.GET.get('sort') or ''

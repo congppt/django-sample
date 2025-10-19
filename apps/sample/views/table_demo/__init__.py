@@ -170,7 +170,7 @@ def _common_context(request):
 
 def page(request):
     context = _common_context(request)
-    return render(request, 'home/table_demo.html', context)
+    return render(request, 'table_demo/table_demo.html', context)
 
 
 def partial(request):
@@ -266,4 +266,4 @@ def detail(request, id: int):
             'status': row['status'],
         },
     }
-    return render(request, 'home/detail_demo.html', ctx)
+    return render(request, 'table_demo/detail_demo.html', ctx)
