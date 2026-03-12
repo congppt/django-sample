@@ -1,0 +1,17 @@
+{% extends 'templates/layouts/index.html' %}
+
+{% block title %}UI Showcase{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-16 space-y-16">
+  <header>
+    <h1 class="text-3xl font-semibold mb-2">UI Showcase</h1>
+    <p class="text-sm">
+      A collection of isolated UI components rendered in one place.
+    </p>
+  </header>
+
+  {% include 'ui_showcase/tooltip.html' %}
+</div>
+{% endblock %}
+

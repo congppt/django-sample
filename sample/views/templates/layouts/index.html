@@ -16,8 +16,10 @@
 </head>
 
 <body>
+  <main class="min-h-screen bg-gray-100">
+    {% block content %}{% endblock %}
+  </main>
 </body>
 {% block scripts %}
 {% endblock %}
-
 </html>
