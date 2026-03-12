@@ -1,0 +1,41 @@
+/* Select popup & options styling is officially supported */
+/* https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Customizable_select */
+select,
+::picker(select) {
+    appearance: base-select;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+select,
+option {
+    transition: 0.4s;
+}
+
+select::picker-icon {
+    transition: 0.4s rotate;
+}
+
+select:open::picker-icon {
+    rotate: 180deg;
+}
+
+::picker(select) {
+    opacity: 0;
+    border: none;
+    border-radius: var(--radius-lg);
+    transition: all 0.4s allow-discrete;
+    max-width: calc(250 * var(--spacing));
+}
+
+::picker(select):popover-open {
+    opacity: 1;
+}
+
+@starting-style {
+    ::picker(select):popover-open {
+        opacity: 0;
+    }
+}
