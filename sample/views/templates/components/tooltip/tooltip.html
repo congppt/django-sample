@@ -1,12 +1,14 @@
-{% macro tooltip(title, description) %}
+{% macro tooltip(description, axis='vertical') %}
+{% if description is none or not description|trim %}
+  {{ caller() }}
+{% else %}
 <div
   class="relative inline-flex"
   x-data="{
     open: false,
     placement: 'top',
-    showDescription: true,
     tooltipId: 'tooltip-' + Math.random().toString(36).slice(2),
-    hasDescription: {{ 'true' if description|trim else 'false' }},
+    axis: '{{ axis }}',
     coords: { top: 0, left: 0 },
     margin: 12,
     init() {
@@ -32,33 +34,72 @@
       const panelRect = panelEl.getBoundingClientRect();
       const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const spaceAbove = triggerRect.top;
-      const spaceBelow = viewportHeight - triggerRect.bottom;
-      let placement = 'top';
-      let top = triggerRect.top - panelRect.height - this.margin;
-      if (top < this.margin && spaceBelow > spaceAbove) {
-        placement = 'bottom';
-        top = triggerRect.bottom + this.margin;
+
+      if (this.axis === 'horizontal') {
+        const spaceLeft = triggerRect.left;
+        const spaceRight = viewportWidth - triggerRect.right;
+        let placement = 'right';
+        let top = triggerRect.top + triggerRect.height / 2 - panelRect.height / 2;
+        let left = triggerRect.right + this.margin;
+
+        if (left + panelRect.width + this.margin > viewportWidth || spaceLeft > spaceRight) {
+          placement = 'left';
+          left = triggerRect.left - panelRect.width - this.margin;
+        }
+
+        const maxTop = viewportHeight - panelRect.height - this.margin;
+        if (top < this.margin) top = this.margin;
+        if (top > maxTop) top = maxTop;
+
+        const maxLeft = viewportWidth - panelRect.width - this.margin;
+        if (left < this.margin) left = this.margin;
+        if (left > maxLeft) left = maxLeft;
+
+        this.coords = { top, left };
+        this.placement = placement;
+      } else {
+        const spaceAbove = triggerRect.top;
+        const spaceBelow = viewportHeight - triggerRect.bottom;
+        let placement = 'top';
+        let top = triggerRect.top - panelRect.height - this.margin;
+        if (top < this.margin && spaceBelow > spaceAbove) {
+          placement = 'bottom';
+          top = triggerRect.bottom + this.margin;
+        }
+
+        /*
+        Decide horizontal alignment (left / center / right) based on trigger position
+        so the tooltip can use as much width as possible.
+        */
+        const triggerCenter = triggerRect.left + triggerRect.width / 2;
+        const leftZone = viewportWidth / 3;
+        const rightZone = (viewportWidth * 2) / 3;
+        let align = 'center';
+        if (triggerCenter <= leftZone) {
+          align = 'start';
+        } else if (triggerCenter >= rightZone) {
+          align = 'end';
+        }
+
+        let left;
+        if (align === 'start') {
+          // Prefer aligning with the left margin / trigger, then clamp
+          left = Math.max(this.margin, triggerRect.left);
+        } else if (align === 'end') {
+          // Prefer aligning the right edge to the trigger's right edge
+          left = triggerRect.right - panelRect.width;
+        } else {
+          // Center on trigger
+          left = triggerCenter - panelRect.width / 2;
+        }
+
+        const maxLeft = viewportWidth - panelRect.width - this.margin;
+        if (left < this.margin) left = this.margin;
+        if (left > maxLeft) left = maxLeft;
+
+        this.coords = { top, left };
+        this.placement = placement;
       }
-
-      /* 
-      Center horizontally on the trigger, then clamp so the tooltip stays within the viewport.
-      */
-      let left = triggerRect.left + triggerRect.width / 2 - panelRect.width / 2;
-      const maxLeft = viewportWidth - panelRect.width - this.margin;
-
-      if (left < this.margin) left = this.margin;
-      if (left > maxLeft) left = maxLeft;
-
-      this.coords = { top, left };
-      this.placement = placement;
-
-      /*
-      Keep description visibility stable: only hide it on very small viewports.
-       */
-      const smallViewportWidth = viewportWidth < 640;
-      const smallViewportHeight = viewportHeight < 360;
-      this.showDescription = !(smallViewportWidth || smallViewportHeight);
 
       /*
       Restore original inline styles so we don't affect normal rendering.
@@ -89,10 +130,9 @@
     x-transition
     role="tooltip"
     :id="tooltipId"
-    class="fixed z-50 rounded-xl bg-slate-900 text-slate-50 shadow-lg px-3 py-2 text-xs leading-relaxed"
+    class="fixed z-50 rounded-xl bg-slate-900 text-slate-50 shadow-lg px-3 py-2 text-xs leading-relaxed whitespace-normal break-words"
     :class="[
       'inline-block max-w-xs',
-      (hasDescription && showDescription) ? 'min-w-[12rem]' : '',
       placement === 'top'
         ? 'origin-bottom'
         : 'origin-top'
@@ -101,23 +141,10 @@
     @mouseenter="open = true"
     @mouseleave="open = false"
   >
-    <div class="font-semibold">
-      {{ title }}
-    </div>
-    <p
-      class="mt-1 text-slate-300"
-      x-show="hasDescription && showDescription"
-    >
+    <p class="text-slate-300">
       {{ description }}
     </p>
-    <!-- Arrow -->
-    <div
-      class="absolute h-2 w-2 bg-slate-900 rotate-45"
-      :class="placement === 'top'
-        ? 'left-1/2 -bottom-1 -translate-x-1/2'
-        : 'left-1/2 -top-1 -translate-x-1/2'"
-    ></div>
   </div>
 </div>
+{% endif %}
 {% endmacro %}
-
