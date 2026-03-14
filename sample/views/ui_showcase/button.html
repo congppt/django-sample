@@ -1,0 +1,67 @@
+{% from 'templates/components/button/button.html' import button %}
+
+<section class="py-16 space-y-12">
+  <header class="mb-10">
+    <h2 class="text-2xl font-semibold text-slate-900">Button</h2>
+    <p class="mt-2 text-sm text-slate-600">
+      Rectangular buttons with rounded corners; text with optional icon (left or right), or icon-only when text is empty.
+    </p>
+  </header>
+
+  {# Static states (like your reference image) #}
+  <div class="grid gap-12 lg:grid-cols-2">
+    <div class="space-y-8">
+      <h3 class="text-sm font-semibold text-slate-900">Text + icon · Filled</h3>
+      <div class="flex flex-col gap-6">
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Default</span>
+          {{ button(icon='circle.svg', variant='filled', state='default') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Hover</span>
+          {{ button(icon='circle.svg', variant='filled', state='hover') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Active</span>
+          {{ button(icon='circle.svg', variant='filled', state='active') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Disabled</span>
+          {{ button(icon='circle.svg', variant='filled', state='disabled') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Loading</span>
+          {{ button(icon='circle.svg', variant='filled', state='loading', loading_text='Submitting...') }}
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-8">
+      <h3 class="text-sm font-semibold text-slate-900">Text + icon · Outlined</h3>
+      <div class="flex flex-col gap-6">
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Default</span>
+          {{ button(icon='circle.svg', variant='outlined', state='default') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Hover</span>
+          {{ button(icon='circle.svg', variant='outlined', state='hover') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Active</span>
+          {{ button(icon='circle.svg', variant='outlined', state='active') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Disabled</span>
+          {{ button(icon='circle.svg', variant='outlined', state='disabled') }}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="w-20 text-xs text-slate-500">Loading</span>
+          {{ button(icon='circle.svg', variant='outlined', state='loading', loading_text='Submitting...') }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Icon-only, interactive, form + action demo etc. can follow as before #}
+</section>

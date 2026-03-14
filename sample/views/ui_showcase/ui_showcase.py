@@ -9,6 +9,7 @@ class UIShowcasePageView(TemplateView):
 
 COMPONENT_TEMPLATES = {
     "tooltip": "ui_showcase/tooltip.html",
+    "button": "ui_showcase/button.html",
 }
 
 
