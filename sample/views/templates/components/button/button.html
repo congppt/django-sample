@@ -1,76 +1,67 @@
-{% macro button(text='Button CTA', icon=none, icon_position='right', variant='filled', loading=false, disabled=false, loading_text='Submitting...', state=none, type='button', href=none, action=none, loading_bind=none, disabled_bind=none, class='', kwargs={}) %}
-{% set visual_state = state if state is not none else ('loading' if loading else ('disabled' if disabled else none)) %}
-{% set use_action = action is not none and action|trim and not href %}
-{% set use_loading_bind = use_action or (loading_bind is not none and loading_bind|trim) %}
-{% set loading_bind_expr = 'loading' if use_action else loading_bind %}
-{% set use_disabled_bind = disabled_bind is not none and disabled_bind|trim %}
-{% set icon_only = (text is none or not text|trim) and (icon or loading or visual_state == 'loading') %}
+{% macro button(text='Button CTA', icon=none, icon_position='right', variant='filled', loading=false, disabled=false,
+loading_text='Submitting...', type='button', href=none, click_event_name=none, htmx_event_prefix=none, class='',
+kwargs={}) %}
+{% set icon_only = (text is none or not text|trim) and (icon or loading) %}
 {% if icon_only %}
-  {% set base = 'inline-flex items-center justify-center rounded-lg size-10 transition shrink-0' %}
+{% set base = 'inline-flex items-center justify-center rounded-lg h-9 w-9 transition shrink-0' %}
 {% else %}
-  {% set base = 'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition shrink-0' %}
+{% set base = 'inline-flex items-center justify-center gap-2 rounded-lg h-9 px-4 text-sm font-medium transition shrink-0' %}
 {% endif %}
 {% if variant == 'filled' %}
-  {% if visual_state == 'disabled' %}
-    {% set variant_classes = 'border border-transparent bg-gray-200 text-gray-400 cursor-not-allowed' %}
-  {% elif visual_state == 'loading' or visual_state == 'active' or visual_state == 'hover' %}
-    {% set variant_classes = 'border border-transparent bg-red-800 text-white' %}
-  {% else %}
-    {% set variant_classes = 'border border-transparent bg-red-700 text-white hover:bg-red-800 active:bg-red-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-transparent' %}
-  {% endif %}
+{% set variant_classes = 'border border-transparent bg-red-700 text-white hover:bg-red-800 active:bg-red-800
+disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-transparent' %}
 {% else %}
-  {% if visual_state == 'disabled' %}
-    {% set variant_classes = 'border border-gray-300 bg-white text-gray-400 cursor-not-allowed' %}
-  {% elif visual_state == 'loading' or visual_state == 'active' or visual_state == 'hover' %}
-    {% set variant_classes = 'border border-gray-400 bg-gray-100 text-red-800' %}
-  {% else %}
-    {% set variant_classes = 'border border-gray-400 bg-white text-red-700 hover:bg-gray-100 hover:text-red-800 active:bg-gray-100 active:text-red-800 disabled:bg-white disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed' %}
-  {% endif %}
+{% set variant_classes = 'border border-gray-400 bg-white text-red-700 hover:bg-gray-100 hover:text-red-800
+active:bg-gray-100 active:text-red-800 disabled:bg-white disabled:text-gray-400 disabled:border-gray-300
+disabled:cursor-not-allowed' %}
 {% endif %}
-{% set show_icon = use_action or (loading or visual_state == 'loading') or icon %}
-{% set icon_file = 'spinner.svg' if (loading or visual_state == 'loading') else (icon or 'circle.svg') %}
+{% set show_icon = loading or icon %}
+{% set icon_file = 'spinner.svg' if loading else (icon or 'circle.svg') %}
 {% set icon_loading_file = 'spinner.svg' %}
-{% set icon_wrapper_class = 'shrink-0 size-6 [&>svg]:size-full' ~ (' animate-spin' if (loading or visual_state == 'loading') else '') %}
-{% set icon_loading_class = 'shrink-0 size-6 [&>svg]:size-full animate-spin' %}
+{% set icon_wrapper_class = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none' ~ (' animate-spin' if loading else '') %}
+{% set icon_loading_class = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin' %}
 {% set tag = 'a' if href else 'button' %}
-{% if use_action %}
-<div class="inline-flex" x-data="{ loading: false }">
-{% endif %}
-<{{ tag }}
-  {% if href %}href="{{ href }}"{% else %}type="{{ type }}"{% endif %}
-  {% if not href and not use_disabled_bind and (disabled or visual_state == 'disabled') %}disabled{% endif %}
-  {% if use_disabled_bind %}x-bind:disabled="{{ disabled_bind }}"{% endif %}
-  {% if use_loading_bind %}x-bind:aria-busy="{{ loading_bind_expr }}"{% elif loading or visual_state == 'loading' %}aria-busy="true"{% endif %}
-  {% if use_action %}@click="(async (e) => { loading = true; try { let r = (() => { const $event = e; return ({{ action }}); })(); await (r && r.then ? r : Promise.resolve()); } finally { loading = false } })($event)"{% endif %}
-  class="{{ base }} {{ variant_classes }} {{ class }}"
-  {{ kwargs | xmlattr }}
+<div
+  class="inline-flex"
+  x-data="{ loading: false }"
+  x-init="
+    const before = (e) => { if (e.detail && $el.contains(e.detail.elt)) loading = true };
+    const after = (e) => {
+      if (!e.detail || !$el.contains(e.detail.elt)) return;
+      loading = false;
+      {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
+      const status = e.detail.xhr.status;
+      const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
+      $refs.button.dispatchEvent(new CustomEvent('{{ htmx_event_prefix }}:' + outcome, { bubbles: true, detail: { status, xhr: e.detail.xhr } }));
+      {% endif %}
+    };
+    document.body.addEventListener('htmx:beforeRequest', before);
+    document.body.addEventListener('htmx:afterRequest', after);
+  "
 >
-  {% if show_icon and icon_position == 'left' %}
-    {% if use_loading_bind %}
-      <span class="{{ icon_wrapper_class }}" x-show="!{{ loading_bind_expr }}">{% include icon_file %}</span>
-      <span class="{{ icon_loading_class }}" x-show="{{ loading_bind_expr }}" x-cloak style="display: none;">{% include icon_loading_file %}</span>
-    {% else %}
-      <span class="{{ icon_wrapper_class }}">{% include icon_file %}</span>
+  <{{ tag }}
+    x-ref="button"
+    {% if href %}href="{{ href }}"{% else %}type="{{ type }}"{% endif %}
+    {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
+    x-bind:aria-busy="loading"
+    {% if click_event_name is not none and click_event_name|trim %}
+      @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
     {% endif %}
-  {% endif %}
-  {% if not icon_only %}
-    {% if use_loading_bind %}
-      <span x-show="!{{ loading_bind_expr }}">{{ text }}</span>
-      <span x-show="{{ loading_bind_expr }}" x-cloak style="display: none;">{{ loading_text }}</span>
-    {% else %}
-      <span>{{ loading_text if (loading or visual_state == 'loading') else text }}</span>
+    class="{{ base }} {{ variant_classes }} {{ class }}"
+    {{ kwargs | xmlattr }}
+  >
+    {% if show_icon and icon_position == 'left' %}
+    <span class="{{ icon_wrapper_class }}" x-show="!loading">{% include icon_file %}</span>
+    <span class="{{ icon_loading_class }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading_file %}</span>
     {% endif %}
-  {% endif %}
-  {% if show_icon and icon_position == 'right' %}
-    {% if use_loading_bind %}
-      <span class="{{ icon_wrapper_class }}" x-show="!{{ loading_bind_expr }}">{% include icon_file %}</span>
-      <span class="{{ icon_loading_class }}" x-show="{{ loading_bind_expr }}" x-cloak style="display: none;">{% include icon_loading_file %}</span>
-    {% else %}
-      <span class="{{ icon_wrapper_class }}">{% include icon_file %}</span>
+    {% if not icon_only %}
+    <span x-show="!loading">{{ text }}</span>
+    <span x-show="loading" x-cloak style="display: none;">{{ loading_text }}</span>
     {% endif %}
-  {% endif %}
-</{{ tag }}>
-{% if use_action %}
+    {% if show_icon and icon_position == 'right' %}
+    <span class="{{ icon_wrapper_class }}" x-show="!loading">{% include icon_file %}</span>
+    <span class="{{ icon_loading_class }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading_file %}</span>
+    {% endif %}
+  </{{ tag }}>
 </div>
-{% endif %}
 {% endmacro %}
