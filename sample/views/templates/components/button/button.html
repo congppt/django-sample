@@ -1,30 +1,45 @@
-{% macro button(text='Button CTA', icon=none, icon_position='right', variant='filled', loading=false, disabled=false,
-loading_text='Submitting...', type='button', href=none, click_event_name=none, htmx_event_prefix=none, class='',
-kwargs={}) %}
-{% set icon_only = (text is none or not text|trim) and (icon or loading) %}
-{% if icon_only %}
-{% set base = 'inline-flex items-center justify-center rounded-lg h-9 w-9 transition shrink-0' %}
+{% macro button(
+  text='Button CTA',
+  icon=none,
+  icon_position='left',
+  variant='filled',
+  disabled=false,
+  loading_text='Submitting...',
+  href=none,
+  click_event_name=none,
+  htmx_event_prefix=none,
+  class='',
+  kwargs={}
+) %}
+{% set tag = 'a' if href else 'button' %}
+{% set base_classes = 'inline-flex items-center justify-center rounded-lg h-9 transition shrink-0' %}
+{% set text = (text or '')|trim %}
+{% if text %}
+{% set title_classes = 'gap-2 px-4 text-sm font-medium' %}
 {% else %}
-{% set base = 'inline-flex items-center justify-center gap-2 rounded-lg h-9 px-4 text-sm font-medium transition shrink-0' %}
+{% set title_classes = 'w-9' %}
 {% endif %}
 {% if variant == 'filled' %}
-{% set variant_classes = 'border border-transparent bg-red-700 text-white hover:bg-red-800 active:bg-red-800
-disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-transparent' %}
+{% set variant_classes = 'border border-transparent bg-red-700 text-white hover:bg-red-800 active:bg-red-800' %}
 {% else %}
 {% set variant_classes = 'border border-gray-400 bg-white text-red-700 hover:bg-gray-100 hover:text-red-800
-active:bg-gray-100 active:text-red-800 disabled:bg-white disabled:text-gray-400 disabled:border-gray-300
-disabled:cursor-not-allowed' %}
+active:bg-gray-100 active:text-red-800' %}
 {% endif %}
-{% set show_icon = loading or icon %}
-{% set icon_file = 'spinner.svg' if loading else (icon or 'circle.svg') %}
-{% set icon_loading_file = 'spinner.svg' %}
-{% set icon_wrapper_class = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none' ~ (' animate-spin' if loading else '') %}
-{% set icon_loading_class = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin' %}
-{% set tag = 'a' if href else 'button' %}
-<div
-  class="inline-flex"
+{% if disabled %}
+{% set disabled_classes = 'disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-transparent' %}
+{% else %}
+{% set disabled_classes = '' %}
+{% endif %}
+{% set icon_loading = 'spinner.svg' %}
+{% set icon_wrapper_classes = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none' %}
+{% set icon_loading_classes = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin' %}
+<{{ tag }}
+  {% if href %}href="{{ href }}"{% else %}type="button"{% endif %}
+  class="{{ base_classes }} {{ title_classes }} {{ variant_classes }} {{ disabled_classes }} {{ class }}"
   x-data="{ loading: false }"
-  x-init="
+  {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
+  x-bind:aria-busy="loading"
+  x-effect="
     const before = (e) => { if (e.detail && $el.contains(e.detail.elt)) loading = true };
     const after = (e) => {
       if (!e.detail || !$el.contains(e.detail.elt)) return;
@@ -32,36 +47,31 @@ disabled:cursor-not-allowed' %}
       {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
       const status = e.detail.xhr.status;
       const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
-      $refs.button.dispatchEvent(new CustomEvent('{{ htmx_event_prefix }}:' + outcome, { bubbles: true, detail: { status, xhr: e.detail.xhr } }));
+      $dispatch('{{ htmx_event_prefix }}:' + outcome, { bubbles: true, detail: { status, xhr: e.detail.xhr } });
       {% endif %}
     };
     document.body.addEventListener('htmx:beforeRequest', before);
     document.body.addEventListener('htmx:afterRequest', after);
+    return () => {
+      document.body.removeEventListener('htmx:beforeRequest', before);
+      document.body.removeEventListener('htmx:afterRequest', after);
+    };
   "
+  {% if click_event_name is not none and click_event_name|trim %}
+    @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
+  {% endif %}
+  {{ kwargs | xmlattr }}
 >
-  <{{ tag }}
-    x-ref="button"
-    {% if href %}href="{{ href }}"{% else %}type="{{ type }}"{% endif %}
-    {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
-    x-bind:aria-busy="loading"
-    {% if click_event_name is not none and click_event_name|trim %}
-      @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
-    {% endif %}
-    class="{{ base }} {{ variant_classes }} {{ class }}"
-    {{ kwargs | xmlattr }}
-  >
-    {% if show_icon and icon_position == 'left' %}
-    <span class="{{ icon_wrapper_class }}" x-show="!loading">{% include icon_file %}</span>
-    <span class="{{ icon_loading_class }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading_file %}</span>
-    {% endif %}
-    {% if not icon_only %}
-    <span x-show="!loading">{{ text }}</span>
-    <span x-show="loading" x-cloak style="display: none;">{{ loading_text }}</span>
-    {% endif %}
-    {% if show_icon and icon_position == 'right' %}
-    <span class="{{ icon_wrapper_class }}" x-show="!loading">{% include icon_file %}</span>
-    <span class="{{ icon_loading_class }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading_file %}</span>
-    {% endif %}
-  </{{ tag }}>
-</div>
+  {% if icon and icon_position == 'left' %}
+  <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>
+  {% endif %}
+  {% if text %}
+  <span x-show="!loading">{{ text }}</span>
+  <span x-show="loading" x-cloak style="display: none;">{{ loading_text }}</span>
+  {% endif %}
+  {% if icon and icon_position == 'right' %}
+  <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>
+  {% endif %}
+  <span class="{{ icon_loading_classes }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading %}</span>
+</{{ tag }}>
 {% endmacro %}
