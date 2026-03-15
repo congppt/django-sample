@@ -1,7 +1,10 @@
+{% from 'templates/components/tooltip/tooltip.html' import tooltip %}
 {% macro button(
   text='Button CTA',
   icon=none,
   icon_position='left',
+  tooltip_content=none,
+  tooltip_axis='vertical',
   variant='filled',
   disabled=false,
   loading_text='Submitting...',
@@ -33,45 +36,47 @@ active:bg-gray-100 active:text-red-800' %}
 {% set icon_loading = 'spinner.svg' %}
 {% set icon_wrapper_classes = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none' %}
 {% set icon_loading_classes = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin' %}
-<{{ tag }}
-  {% if href %}href="{{ href }}"{% else %}type="button"{% endif %}
-  class="{{ base_classes }} {{ title_classes }} {{ variant_classes }} {{ disabled_classes }} {{ class }}"
-  x-data="{ loading: false }"
-  {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
-  x-bind:aria-busy="loading"
-  x-effect="
-    const before = (e) => { if (e.detail && $el.contains(e.detail.elt)) loading = true };
-    const after = (e) => {
-      if (!e.detail || !$el.contains(e.detail.elt)) return;
-      loading = false;
-      {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
-      const status = e.detail.xhr.status;
-      const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
-      $dispatch('{{ htmx_event_prefix }}:' + outcome, { bubbles: true, detail: { status, xhr: e.detail.xhr } });
-      {% endif %}
-    };
-    document.body.addEventListener('htmx:beforeRequest', before);
-    document.body.addEventListener('htmx:afterRequest', after);
-    return () => {
-      document.body.removeEventListener('htmx:beforeRequest', before);
-      document.body.removeEventListener('htmx:afterRequest', after);
-    };
-  "
-  {% if click_event_name is not none and click_event_name|trim %}
-    @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
-  {% endif %}
-  {{ kwargs | xmlattr }}
->
-  {% if icon and icon_position == 'left' %}
-  <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>
-  {% endif %}
-  {% if text %}
-  <span x-show="!loading">{{ text }}</span>
-  <span x-show="loading" x-cloak style="display: none;">{{ loading_text }}</span>
-  {% endif %}
-  {% if icon and icon_position == 'right' %}
-  <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>
-  {% endif %}
-  <span class="{{ icon_loading_classes }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading %}</span>
-</{{ tag }}>
+{% call tooltip(tooltip_content, tooltip_axis) %}
+  <{{ tag }}
+    {% if href %}href="{{ href }}"{% else %}type="button"{% endif %}
+    class="{{ base_classes }} {{ title_classes }} {{ variant_classes }} {{ disabled_classes }} {{ class }}"
+    x-data="{ loading: false }"
+    {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
+    x-bind:aria-busy="loading"
+    x-effect="
+      const before = (e) => { if (e.detail && $el.contains(e.detail.elt)) loading = true };
+      const after = (e) => {
+        if (!e.detail || !$el.contains(e.detail.elt)) return;
+        loading = false;
+        {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
+        const status = e.detail.xhr.status;
+        const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
+        $dispatch('{{ htmx_event_prefix }}:' + outcome, { bubbles: true, detail: { status, xhr: e.detail.xhr } });
+        {% endif %}
+      };
+      document.body.addEventListener('htmx:beforeRequest', before);
+      document.body.addEventListener('htmx:afterRequest', after);
+      return () => {
+        document.body.removeEventListener('htmx:beforeRequest', before);
+        document.body.removeEventListener('htmx:afterRequest', after);
+      };
+    "
+    {% if click_event_name is not none and click_event_name|trim %}
+      @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
+    {% endif %}
+    {{ kwargs | xmlattr }}
+  >
+    {% if icon and icon_position == 'left' %}
+    <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>
+    {% endif %}
+    {% if text %}
+    <span x-show="!loading">{{ text }}</span>
+    <span x-show="loading" x-cloak style="display: none;">{{ loading_text }}</span>
+    {% endif %}
+    {% if icon and icon_position == 'right' %}
+    <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>
+    {% endif %}
+    <span class="{{ icon_loading_classes }}" x-show="loading" x-cloak style="display: none;">{% include icon_loading %}</span>
+  </{{ tag }}>
+{% endcall %}
 {% endmacro %}

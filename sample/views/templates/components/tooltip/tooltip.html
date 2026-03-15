@@ -1,4 +1,4 @@
-{% macro tooltip(description, axis='vertical') %}
+{% macro tooltip(description=none, axis='vertical') %}
 {% if description is none or not description|trim %}
   {{ caller() }}
 {% else %}

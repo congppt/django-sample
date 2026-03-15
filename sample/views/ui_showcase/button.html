@@ -4,10 +4,20 @@
   <header class="mb-10">
     <h2 class="text-2xl font-semibold text-slate-900">Button</h2>
     <p class="mt-2 text-sm text-slate-600">
-      Two types (button, link), two variants (filled, outlined). Supports modal and form use, loading and disabled state.
+      Two types (button, link), two variants (filled, outlined). Supports modal and form use, loading and disabled
+      state.
     </p>
   </header>
-
+  <div class="space-y-4">
+    <h3 class="text-sm font-semibold text-slate-900">Icon-only with tooltip</h3>
+    <div class="flex flex-wrap items-center gap-4">
+      {{ button('', icon='plus.svg', variant='filled', tooltip_content='Add item', tooltip_axis='vertical') }}
+      {{ button('', icon='edit.svg', variant='outlined', tooltip_content='Edit', tooltip_axis='vertical') }}
+      {{ button('', icon='trash.svg', variant='outlined', tooltip_content='Delete', tooltip_axis='vertical') }}
+      {{ button('', icon='search.svg', variant='filled', tooltip_content='Search', tooltip_axis='vertical') }}
+      {{ button('', icon='close.svg', variant='outlined', tooltip_content='Close', tooltip_axis='vertical') }}
+    </div>
+  </div>
   <div class="grid gap-12 lg:grid-cols-2">
     <div class="space-y-8">
       <h3 class="text-sm font-semibold text-slate-900">Filled</h3>
@@ -30,45 +40,35 @@
     <div class="flex flex-wrap items-center gap-4">
       {{ button('Disabled', icon='circle.svg', variant='filled', disabled=true) }}
       {{ button('Disabled', icon='circle.svg', variant='outlined', disabled=true) }}
-      {{ button('Trigger loading', icon='circle.svg', variant='filled', loading_text='Loading...', kwargs={'hx-get': url('ui_showcase_delay_demo'), 'hx-target': '#loading-demo-result', 'hx-swap': 'innerHTML'}) }}
+      {{ button('Trigger loading', icon='circle.svg', variant='filled', loading_text='Loading...', kwargs={'hx-get':
+      url('ui_showcase_delay_demo'), 'hx-target': '#loading-demo-result', 'hx-swap': 'innerHTML'}) }}
     </div>
     <div id="loading-demo-result" class="min-h-[1.5rem]"></div>
   </div>
 
-  <div
-    class="space-y-4"
-    x-data="{ modalOpen: false }"
-    @open-modal.window="modalOpen = true"
-    @form:submit:success.window="modalOpen = false; $refs.modalForm && $refs.modalForm.reset()"
-  >
+  <div class="space-y-4" x-data="{ modalOpen: false }" @open-modal.window="modalOpen = true"
+    @form:submit:success.window="modalOpen = false; $refs.modalForm && $refs.modalForm.reset()">
     <h3 class="text-sm font-semibold text-slate-900">Modal & form</h3>
     <div class="flex flex-wrap items-center gap-4">
       {{ button('Open modal', icon='circle.svg', variant='filled', click_event_name='open-modal') }}
     </div>
-    <div
-      x-show="modalOpen"
-      x-cloak
-      class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
-      x-transition.opacity
-    >
-      <div
-        class="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
-        @click.away="modalOpen = false"
-      >
+    <div x-show="modalOpen" x-cloak
+      class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm" x-transition.opacity>
+      <div class="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+        @click.away="modalOpen = false">
         <h4 class="text-lg font-semibold text-slate-900">Submit form</h4>
         <p class="mt-1 text-sm text-slate-600">On success the modal closes and the form is cleared.</p>
-        <form
-          x-ref="modalForm"
-          class="mt-4 flex flex-col gap-4"
-          @submit.prevent
-        >
+        <form x-ref="modalForm" class="mt-4 flex flex-col gap-4" @submit.prevent>
           <label class="block text-sm font-medium text-slate-700">
             Name
-            <input type="text" name="name" class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Your name">
+            <input type="text" name="name"
+              class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Your name">
           </label>
           <div class="flex items-center justify-end gap-3">
             {{ button('Close', variant='outlined', click_event_name='close-modal') }}
-            {{ button('Submit', icon='circle.svg', variant='filled', loading_text='Sending...', htmx_event_prefix='form:submit', kwargs={'hx-get': url('ui_showcase_delay_demo'), 'hx-target': '#modal-form-result', 'hx-swap': 'innerHTML'}) }}
+            {{ button('Submit', icon='circle.svg', variant='filled', loading_text='Sending...',
+            htmx_event_prefix='form:submit', kwargs={'hx-get': url('ui_showcase_delay_demo'), 'hx-target':
+            '#modal-form-result', 'hx-swap': 'innerHTML'}) }}
           </div>
           <div id="modal-form-result" class="min-h-[1rem]"></div>
         </form>
