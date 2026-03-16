@@ -7,6 +7,7 @@
   required=false,
   value=none,
   classes='',
+  reload_events=[],
   kwargs={}
 ) %}
 {% set select_id = random_id('select') %}
@@ -15,6 +16,7 @@
   x-data="{
     selectId: '{{ select_id }}',
     optionsUrl: '{{ options_url }}',
+    reloadEvents: {{ jsonify(reload_events or []) }},
     open: false,
     searchQuery: '',
     selected: {{ jsonify(value) }},
@@ -22,6 +24,7 @@
     isLoading: false,
     hasLoaded: false,
     highlightedIndex: -1,
+    reloadListener: null,
     get selectedLabel() {
       if (!this.selected) return null;
       const match = this.options.find(option => option.value === this.selected);
@@ -36,8 +39,8 @@
         return label.includes(normalizedQuery);
       });
     },
-    fetchOptions() {
-      if (this.isLoading || this.hasLoaded) return;
+    fetchOptions(force = false) {
+      if (this.isLoading || (this.hasLoaded && !force)) return;
       this.isLoading = true;
       fetch(this.optionsUrl, {
         headers: {
@@ -118,7 +121,26 @@
       if (this.highlightedIndex >= 0) {
         this.chooseByIndex(this.highlightedIndex);
       }
-    }
+    },
+    init() {
+      this.fetchOptions();
+      if (Array.isArray(this.reloadEvents) && this.reloadEvents.length) {
+        this.reloadListener = () => {
+          this.hasLoaded = false;
+          this.fetchOptions(true);
+        };
+        this.reloadEvents.forEach(eventName => {
+          window.addEventListener(eventName, this.reloadListener);
+        });
+      }
+    },
+    destroy() {
+      if (this.reloadListener) {
+        this.reloadEvents.forEach(eventName => {
+          window.removeEventListener(eventName, this.reloadListener);
+        });
+      }
+    },
   }"
   @keydown.escape.window="closeDropdown()"
   @click.outside="closeDropdown()"
