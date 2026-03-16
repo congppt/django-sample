@@ -12,7 +12,7 @@
   click_event_name=none,
   htmx_event_prefix=none,
   class='',
-  kwargs={}
+  extra_attributes={}
 ) %}
 {% set tag = 'a' if href else 'button' %}
 {% set base_classes = 'inline-flex items-center justify-center rounded-lg h-9 transition shrink-0' %}
@@ -40,31 +40,40 @@ active:bg-gray-100 active:text-red-800' %}
   <{{ tag }}
     {% if href %}href="{{ href }}"{% else %}type="button"{% endif %}
     class="{{ base_classes }} {{ title_classes }} {{ variant_classes }} {{ disabled_classes }} {{ class }}"
-    x-data="{ loading: false }"
+    {{ extra_attributes | xmlattr }}
+    x-data="{ 
+      loading: false,
+      beforeHTMX: null,
+      afterHTMX: null,
+      init() {
+        this.beforeHTMX = (e) => { 
+          if (e.detail && $el.contains(e.detail.elt)) this.loading = true 
+        };
+        this.afterHTMX = (e) => {
+          if (!e.detail || !$el.contains(e.detail.elt)) return;
+          this.loading = false;
+          {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
+          const status = e.detail.xhr.status;
+          const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
+          this.$dispatch('{{ htmx_event_prefix }}:' + outcome, { 
+            bubbles: true, 
+            detail: { status, xhr: e.detail.xhr } 
+          });
+          {% endif %}
+        };
+        document.body.addEventListener('htmx:beforeRequest', this.beforeHTMX);
+        document.body.addEventListener('htmx:afterRequest', this.afterHTMX);
+      },
+      destroy() {
+        document.body.removeEventListener('htmx:beforeRequest', this.beforeHTMX);
+        document.body.removeEventListener('htmx:afterRequest', this.afterHTMX);
+      },
+    }"
     {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
     x-bind:aria-busy="loading"
-    x-effect="
-      const before = (e) => { if (e.detail && $el.contains(e.detail.elt)) loading = true };
-      const after = (e) => {
-        if (!e.detail || !$el.contains(e.detail.elt)) return;
-        loading = false;
-        {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
-        const status = e.detail.xhr.status;
-        const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
-        $dispatch('{{ htmx_event_prefix }}:' + outcome, { bubbles: true, detail: { status, xhr: e.detail.xhr } });
-        {% endif %}
-      };
-      document.body.addEventListener('htmx:beforeRequest', before);
-      document.body.addEventListener('htmx:afterRequest', after);
-      return () => {
-        document.body.removeEventListener('htmx:beforeRequest', before);
-        document.body.removeEventListener('htmx:afterRequest', after);
-      };
-    "
     {% if click_event_name is not none and click_event_name|trim %}
       @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
     {% endif %}
-    {{ kwargs | xmlattr }}
   >
     {% if icon and icon_position == 'left' %}
     <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>

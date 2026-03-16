@@ -40,8 +40,7 @@
     <div class="flex flex-wrap items-center gap-4">
       {{ button('Disabled', icon='circle.svg', variant='filled', disabled=true) }}
       {{ button('Disabled', icon='circle.svg', variant='outlined', disabled=true) }}
-      {{ button('Trigger loading', icon='circle.svg', variant='filled', loading_text='Loading...', kwargs={'hx-get':
-      url('ui_showcase_delay_demo'), 'hx-target': '#loading-demo-result', 'hx-swap': 'innerHTML'}) }}
+      {{ button('Trigger loading', icon='circle.svg', variant='filled', loading_text='Loading...', tooltip_content='Trigger loading', tooltip_axis='horizontal', extra_attributes={'hx-get': url('ui_showcase_delay_demo'), 'hx-target': '#loading-demo-result', 'hx-swap': 'innerHTML'}) }}
     </div>
     <div id="loading-demo-result" class="min-h-[1.5rem]"></div>
   </div>
@@ -67,7 +66,7 @@
           <div class="flex items-center justify-end gap-3">
             {{ button('Close', variant='outlined', click_event_name='close-modal') }}
             {{ button('Submit', icon='circle.svg', variant='filled', loading_text='Sending...',
-            htmx_event_prefix='form:submit', kwargs={'hx-get': url('ui_showcase_delay_demo'), 'hx-target':
+            htmx_event_prefix='form:submit', extra_attributes={'hx-get': url('ui_showcase_delay_demo'), 'hx-target':
             '#modal-form-result', 'hx-swap': 'innerHTML'}) }}
           </div>
           <div id="modal-form-result" class="min-h-[1rem]"></div>

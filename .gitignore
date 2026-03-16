@@ -380,5 +380,6 @@ logs
 *.zip
 requirements-freeze.txt
 staticfiles
-static/js
+static/js/*
+!static/js/index.js
 static/images
