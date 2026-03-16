@@ -6,13 +6,17 @@ footer_html=''
 )
 %}
 {% set sidebar_id = random_id('sidebar') %}
-<aside x-data="{ open: true }" class="h-screen w-64 bg-red-700 transition-all ease-in-out overflow-hidden text-white" 
-        :class="open ? '' : 'w-16!'">
+<aside x-data="{ 
+        open: $persist(true).as('sidebarOpen')
+    }"
+    x-cloak
+    class="h-screen bg-red-700 transition-all ease-in-out overflow-hidden text-white" 
+    :class="open ? 'w-64' : 'w-16'">
 
   {# Logo Section #}
   <div class="flex items-center h-16 px-5 shadow-sm">
     <button @click="open = !open"
-      class="hidden lg:flex items-center rounded-md hover:bg-red-800 transition-colors">
+      class="flex items-center rounded-md hover:bg-red-800 transition-colors">
       <div class="w-6 h-6">
         {% include 'menu.svg' %}
       </div>
