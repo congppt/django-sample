@@ -189,7 +189,7 @@
         x-cloak
         style="display: none;"
         @click="clear($event)"
-        class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        class="h-4 w-4 shrink-0 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         aria-label="Clear"
       >
         {% include 'close.svg' %}
@@ -226,7 +226,7 @@
         @click="selected = option.value; closeDropdown()"
         class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
         :class="[
-          index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700',
+          index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
           option.value === selected ? 'font-medium' : ''
         ]"
       >
