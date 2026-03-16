@@ -1,5 +1,3 @@
-
-
 {% macro select(
   name,
   options_url,
@@ -8,113 +6,126 @@
   hint=none,
   required=false,
   value=none,
-  selected_value=none,
-  id=none,
-  reload_event=none,
-  class='',
+  classes='',
   kwargs={}
 ) %}
-{% set select_id = id or ('select-' ~ name | replace(' ', '-')) %}
+{% set select_id = random_id('select') %}
 <div
-  class="relative w-full {{ class }}"
-  data-options-url="{{ options_url }}"
-  data-reload-event="{{ reload_event or '' }}"
+  class="relative w-full {{ classes }}"
   x-data="{
     selectId: '{{ select_id }}',
-    optionsUrl: '',
+    optionsUrl: '{{ options_url }}',
     open: false,
     searchQuery: '',
-    selected: { value: '', label: '' },
-    optionsLoaded: false,
-    loading: false,
-    searchDebounce: null,
-    get optionsUrlWithQuery() {
-      const q = this.searchQuery.trim();
-      const v = this.selected.value;
-      const base = this.optionsUrl;
-      const params = [];
-      if (q) params.push('q=' + encodeURIComponent(q));
-      if (v) params.push('value=' + encodeURIComponent(v));
-      return params.length ? base + (base.includes('?') ? '&' : '?') + params.join('&') : base;
+    selected: {{ jsonify(value) }},
+    options: [],
+    isLoading: false,
+    hasLoaded: false,
+    highlightedIndex: -1,
+    get selectedLabel() {
+      if (!this.selected) return null;
+      const match = this.options.find(option => option.value === this.selected);
+      return match ? match.label : null;
     },
-    unaccent(str) {
-      if (!str) return '';
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    },
-    filterLocal() {
-      const container = this.$refs.optionsContainer;
-      if (!container) return;
-      const q = this.unaccent((this.searchQuery || '').trim()).toLowerCase();
-      container.querySelectorAll('[role=option]').forEach(el => {
-        const label = this.unaccent(el.getAttribute('data-label') || el.textContent || '').toLowerCase();
-        el.hidden = q ? !label.includes(q) : false;
+    get filteredOptions() {
+      const q = (this.searchQuery || '').trim();
+      if (!q) return this.options;
+      const normalizedQuery = unaccent(q).toLowerCase();
+      return this.options.filter(option => {
+        const label = unaccent(option.label || '').toLowerCase();
+        return label.includes(normalizedQuery);
       });
     },
     fetchOptions() {
-      const trigger = this.$refs.optionLoader;
-      if (!trigger || !this.open) return;
-      // mark as loaded so we don't refetch on every open
-      this.optionsLoaded = true;
-      trigger.setAttribute('hx-get', this.optionsUrlWithQuery);
-      htmx.trigger(trigger, 'click');
+      if (this.isLoading || this.hasLoaded) return;
+      this.isLoading = true;
+      fetch(this.optionsUrl, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load options');
+          return response.json();
+        })
+        .then(data => {
+          this.options = Array.isArray(data) ? data : [];
+          this.hasLoaded = true;
+        })
+        .catch(() => {
+          this.options = [];
+          this.hasLoaded = true;
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
     },
-    loadOptionsOnOpen() {
-      if (this.optionsLoaded) { this.filterLocal(); return; }
+    openDropdown() {
+      if (this.open) return;
+      this.open = true;
+      this.highlightedIndex = -1;
       this.fetchOptions();
+      this.$nextTick(() => this.$refs.searchInput?.focus());
     },
-    choose(optionEl) {
-      const v = optionEl.getAttribute('data-value');
-      const l = optionEl.getAttribute('data-label') || optionEl.textContent.trim();
-      this.selected = { value: v, label: l };
+    closeDropdown() {
       this.open = false;
+      this.highlightedIndex = -1;
       this.searchQuery = '';
     },
     clear(e) {
       e.stopPropagation();
-      this.selected = { value: '', label: '' };
-      this.open = false;
+      this.selected = null;
       this.searchQuery = '';
+      this.highlightedIndex = -1;
+    },
+    chooseByIndex(index) {
+      const option = this.filteredOptions[index];
+      if (!option) return;
+      this.selected = option.value;
+      this.closeDropdown();
+    },
+    onArrowDown() {
+      if (!this.open) {
+        this.openDropdown();
+        return;
+      }
+      const maxIndex = this.filteredOptions.length - 1;
+      if (maxIndex < 0) return;
+      if (this.highlightedIndex < maxIndex) {
+        this.highlightedIndex++;
+      } else {
+        this.highlightedIndex = 0;
+      }
+    },
+    onArrowUp() {
+      if (!this.open) {
+        this.openDropdown();
+        return;
+      }
+      const maxIndex = this.filteredOptions.length - 1;
+      if (maxIndex < 0) return;
+      if (this.highlightedIndex > 0) {
+        this.highlightedIndex--;
+      } else {
+        this.highlightedIndex = maxIndex;
+      }
+    },
+    onEnter() {
+      if (!this.open) {
+        this.openDropdown();
+        return;
+      }
+      if (this.highlightedIndex >= 0) {
+        this.chooseByIndex(this.highlightedIndex);
+      }
     }
   }"
-  x-effect="
-    const before = (e) => { if (this.$el.contains(e.detail?.elt)) this.loading = true; };
-      const after = (e) => {
-        if (!e.detail || !this.$el.contains(e.detail?.elt)) return;
-        this.loading = false;
-        this.optionsLoaded = true;
-      };
-      document.body.addEventListener('htmx:beforeRequest', before);
-      document.body.addEventListener('htmx:afterRequest', after);
-      this.$watch('searchQuery', () => this.filterLocal());
-      return () => {
-        clearTimeout(this.searchDebounce);
-        document.body.removeEventListener('htmx:beforeRequest', before);
-        document.body.removeEventListener('htmx:afterRequest', after);
-      };
-    if (reloadEvent) {
-      const handler = () => {
-        optionsLoaded = false;
-        if (open) fetchOptions();
-      };
-      window.addEventListener(reloadEvent, handler);
-      return () => window.removeEventListener(reloadEvent, handler);
-    }
-  "
-  @keydown.escape.window="open = false"
-  @click.outside="open = false"
+  @keydown.escape.window="closeDropdown()"
+  @click.outside="closeDropdown()"
 >
-  <input type="hidden" name="{{ name }}" :value="selected.value" />
-  <div
-    x-ref="optionLoader"
-    hx-get="{{ options_url }}"
-    hx-trigger="click"
-    hx-target="#{{ select_id }}-options"
-    hx-swap="innerHTML"
-    class="hidden"
-    aria-hidden="true"
-  ></div>
+  <input type="hidden" name="{{ name }}" :value="selected" />
   {% if label is not none and label|trim %}
-  <label :for="selectId" class="mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-700">
+  <label for="{{ select_id }}" class="mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-700">
     <span>{{ label }}{% if required %} <span class="text-red-600">*</span>{% endif %}</span>
   </label>
   {% endif %}
@@ -124,17 +135,18 @@
     :aria-expanded="open"
     aria-haspopup="listbox"
     aria-controls="{{ select_id }}-listbox"
-    :aria-activedescendant="open ? selectId + '-listbox' : null"
+    :aria-activedescendant="open && highlightedIndex >= 0 ? `${selectId}-option-${highlightedIndex}` : null"
     id="{{ select_id }}"
     tabindex="0"
-    @click="open = !open; if (open) loadOptionsOnOpen(); $refs.searchInput?.focus()"
-    @keydown.down.prevent="open = true; loadOptionsOnOpen(); $refs.searchInput?.focus()"
-    @keydown.space.prevent="open = !open; if (open) loadOptionsOnOpen()"
+    @click="open ? closeDropdown() : openDropdown()"
+    @keydown.down.prevent="onArrowDown()"
+    @keydown.up.prevent="onArrowUp()"
+    @keydown.enter.prevent="onEnter()"
     class="flex min-h-9 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
   >
-    <span x-show="!open" class="flex-1 truncate" :class="selected.label ? 'text-slate-900' : 'text-slate-500'">
-      <template x-if="selected.label"><span x-text="selected.label"></span></template>
-      <template x-if="!selected.label"><span>{{ placeholder }}</span></template>
+    <span x-show="!open" class="flex-1 truncate" :class="selectedLabel ? 'text-slate-900' : 'text-slate-500'">
+      <template x-if="selectedLabel !== null"><span x-text="selectedLabel"></span></template>
+      <template x-if="selectedLabel === null"><span>{{ placeholder|trim }}</span></template>
     </span>
     <input
       x-ref="searchInput"
@@ -142,15 +154,32 @@
       x-model="searchQuery"
       type="text"
       class="flex-1 min-w-0 border-0 bg-transparent p-0 text-slate-900 outline-none focus:ring-0"
-      placeholder="{{ placeholder }}"
+      placeholder="{{ placeholder|trim }}"
       @click.stop
     />
     <span class="flex shrink-0 items-center gap-0.5">
-      <span x-show="loading" class="inline-flex text-slate-400" x-cloak style="display: none;">
-        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-red-600"></span>
+      <span x-show="isLoading" x-cloak style="display: none;" class="inline-flex text-slate-400 shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin">
+        {% include 'spinner.svg' %}
       </span>
-      <button type="button" x-show="selected.value && !open" x-cloak style="display: none;" @click="clear($event)" class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Clear">{% include 'close.svg' %}</button>
-      <span class="shrink-0 text-slate-400 transition-transform" :class="open && 'rotate-180'">{% include 'angle-down.svg' %}</span>
+      <button
+        type="button"
+        x-show="selected !== null"
+        x-cloak
+        style="display: none;"
+        @click="clear($event)"
+        class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        aria-label="Clear"
+      >
+        {% include 'close.svg' %}
+      </button>
+      <span class="relative inline-flex h-4 w-4 items-center justify-center text-slate-400">
+        <span x-show="!open" x-cloak class="absolute inset-0 flex items-center justify-center">
+          {% include 'angle-down.svg' %}
+        </span>
+        <span x-show="open" x-cloak class="absolute inset-0 flex items-center justify-center rotate-180">
+          {% include 'angle-down.svg' %}
+        </span>
+      </span>
     </span>
   </div>
   <div
@@ -161,12 +190,34 @@
     role="listbox"
     aria-labelledby="{{ select_id }}"
     class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-    @click.outside="open = false"
   >
-    <div id="{{ select_id }}-options" x-ref="optionsContainer" class="py-0" @click="const o = $event.target.closest('[role=option]'); o && choose(o)"></div>
+    <template x-if="!isLoading && filteredOptions.length === 0">
+      <div class="px-3 py-2 text-xs text-slate-500">
+        Không tìm thấy kết quả phù hợp.
+      </div>
+    </template>
+    <template x-for="(option, index) in filteredOptions" :key="option.value">
+      <div
+        role="option"
+        :id="`${selectId}-option-${index}`"
+        :aria-selected="option.value === selected"
+        @click="selected = option.value; closeDropdown()"
+        class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
+        :class="[
+          index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700',
+          option.value === selected ? 'font-medium' : ''
+        ]"
+      >
+        <span class="mr-2 break-words whitespace-normal" x-text="option.label"></span>
+        <span x-show="option.value === selected" x-cloak class="shrink-0 text-red-600">
+          ✓
+        </span>
+      </div>
+    </template>
   </div>
   {% if hint is not none and hint|trim %}
-  <p class="mt-1 text-xs text-slate-500">{{ hint }}</p>
+  <p class="mt-1 text-xs text-slate-500">{{ hint|trim }}</p>
   {% endif %}
 </div>
 {% endmacro %}
+

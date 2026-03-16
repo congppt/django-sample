@@ -1,6 +1,6 @@
 import time
 
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic.base import TemplateView
 
@@ -15,18 +15,8 @@ ASSET_TYPE_OPTIONS = [
     {"value": "long2", "label": "Cây lâu năm, súc vật làm việc và cho sản phẩm, và các tài sản cố định khác có thời gian sử dụng trên 12 tháng"},
 ]
 
-
-def select_options_partial(request):
-    q = (request.GET.get("q") or "").strip().lower()
-    selected_value = request.GET.get("value") or ""
-    options = ASSET_TYPE_OPTIONS
-    if q:
-        options = [o for o in options if q in o["label"].lower()]
-    context = {
-        "options": options,
-        "selected_value": selected_value,
-    }
-    return render(request, "ui_showcase/select_options_partial.html", context)
+def select_options_json(request):
+    return JsonResponse(ASSET_TYPE_OPTIONS, safe=False)
 
 
 class UIShowcasePageView(TemplateView):
