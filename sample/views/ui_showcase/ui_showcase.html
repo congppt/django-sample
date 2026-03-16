@@ -38,6 +38,17 @@
       >
         Button
       </button>
+      <button
+        type="button"
+        class="rounded-full px-4 py-1.5 font-medium"
+        :class="active === 'select' ? 'bg-slate-100 text-slate-900' : 'text-slate-300 hover:text-white'"
+        @click="active = 'select'"
+        hx-get="{{ url('ui_showcase_component', kwargs={'component': 'select'}) }}"
+        hx-target="#ui-showcase-content"
+        hx-swap="innerHTML"
+      >
+        Select
+      </button>
     </div>
 
     <div id="ui-showcase-content">

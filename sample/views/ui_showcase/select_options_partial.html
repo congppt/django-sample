@@ -1,0 +1,4 @@
+{% from 'templates/components/input/select/select_option.html' import select_option %}
+{% for opt in options %}
+  {{ select_option(opt.value, opt.label, opt.value == selected_value) }}
+{% endfor %}

@@ -1,0 +1,172 @@
+
+
+{% macro select(
+  name,
+  options_url,
+  label='',
+  placeholder='Select...',
+  hint=none,
+  required=false,
+  value=none,
+  selected_value=none,
+  id=none,
+  reload_event=none,
+  class='',
+  kwargs={}
+) %}
+{% set select_id = id or ('select-' ~ name | replace(' ', '-')) %}
+<div
+  class="relative w-full {{ class }}"
+  data-options-url="{{ options_url }}"
+  data-reload-event="{{ reload_event or '' }}"
+  x-data="{
+    selectId: '{{ select_id }}',
+    optionsUrl: '',
+    open: false,
+    searchQuery: '',
+    selected: { value: '', label: '' },
+    optionsLoaded: false,
+    loading: false,
+    searchDebounce: null,
+    get optionsUrlWithQuery() {
+      const q = this.searchQuery.trim();
+      const v = this.selected.value;
+      const base = this.optionsUrl;
+      const params = [];
+      if (q) params.push('q=' + encodeURIComponent(q));
+      if (v) params.push('value=' + encodeURIComponent(v));
+      return params.length ? base + (base.includes('?') ? '&' : '?') + params.join('&') : base;
+    },
+    unaccent(str) {
+      if (!str) return '';
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    },
+    filterLocal() {
+      const container = this.$refs.optionsContainer;
+      if (!container) return;
+      const q = this.unaccent((this.searchQuery || '').trim()).toLowerCase();
+      container.querySelectorAll('[role=option]').forEach(el => {
+        const label = this.unaccent(el.getAttribute('data-label') || el.textContent || '').toLowerCase();
+        el.hidden = q ? !label.includes(q) : false;
+      });
+    },
+    fetchOptions() {
+      const trigger = this.$refs.optionLoader;
+      if (!trigger || !this.open) return;
+      // mark as loaded so we don't refetch on every open
+      this.optionsLoaded = true;
+      trigger.setAttribute('hx-get', this.optionsUrlWithQuery);
+      htmx.trigger(trigger, 'click');
+    },
+    loadOptionsOnOpen() {
+      if (this.optionsLoaded) { this.filterLocal(); return; }
+      this.fetchOptions();
+    },
+    choose(optionEl) {
+      const v = optionEl.getAttribute('data-value');
+      const l = optionEl.getAttribute('data-label') || optionEl.textContent.trim();
+      this.selected = { value: v, label: l };
+      this.open = false;
+      this.searchQuery = '';
+    },
+    clear(e) {
+      e.stopPropagation();
+      this.selected = { value: '', label: '' };
+      this.open = false;
+      this.searchQuery = '';
+    }
+  }"
+  x-effect="
+    const before = (e) => { if (this.$el.contains(e.detail?.elt)) this.loading = true; };
+      const after = (e) => {
+        if (!e.detail || !this.$el.contains(e.detail?.elt)) return;
+        this.loading = false;
+        this.optionsLoaded = true;
+      };
+      document.body.addEventListener('htmx:beforeRequest', before);
+      document.body.addEventListener('htmx:afterRequest', after);
+      this.$watch('searchQuery', () => this.filterLocal());
+      return () => {
+        clearTimeout(this.searchDebounce);
+        document.body.removeEventListener('htmx:beforeRequest', before);
+        document.body.removeEventListener('htmx:afterRequest', after);
+      };
+    if (reloadEvent) {
+      const handler = () => {
+        optionsLoaded = false;
+        if (open) fetchOptions();
+      };
+      window.addEventListener(reloadEvent, handler);
+      return () => window.removeEventListener(reloadEvent, handler);
+    }
+  "
+  @keydown.escape.window="open = false"
+  @click.outside="open = false"
+>
+  <input type="hidden" name="{{ name }}" :value="selected.value" />
+  <div
+    x-ref="optionLoader"
+    hx-get="{{ options_url }}"
+    hx-trigger="click"
+    hx-target="#{{ select_id }}-options"
+    hx-swap="innerHTML"
+    class="hidden"
+    aria-hidden="true"
+  ></div>
+  {% if label is not none and label|trim %}
+  <label :for="selectId" class="mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-700">
+    <span>{{ label }}{% if required %} <span class="text-red-600">*</span>{% endif %}</span>
+  </label>
+  {% endif %}
+  <div
+    x-ref="trigger"
+    role="combobox"
+    :aria-expanded="open"
+    aria-haspopup="listbox"
+    aria-controls="{{ select_id }}-listbox"
+    :aria-activedescendant="open ? selectId + '-listbox' : null"
+    id="{{ select_id }}"
+    tabindex="0"
+    @click="open = !open; if (open) loadOptionsOnOpen(); $refs.searchInput?.focus()"
+    @keydown.down.prevent="open = true; loadOptionsOnOpen(); $refs.searchInput?.focus()"
+    @keydown.space.prevent="open = !open; if (open) loadOptionsOnOpen()"
+    class="flex min-h-9 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
+  >
+    <span x-show="!open" class="flex-1 truncate" :class="selected.label ? 'text-slate-900' : 'text-slate-500'">
+      <template x-if="selected.label"><span x-text="selected.label"></span></template>
+      <template x-if="!selected.label"><span>{{ placeholder }}</span></template>
+    </span>
+    <input
+      x-ref="searchInput"
+      x-show="open"
+      x-model="searchQuery"
+      type="text"
+      class="flex-1 min-w-0 border-0 bg-transparent p-0 text-slate-900 outline-none focus:ring-0"
+      placeholder="{{ placeholder }}"
+      @click.stop
+    />
+    <span class="flex shrink-0 items-center gap-0.5">
+      <span x-show="loading" class="inline-flex text-slate-400" x-cloak style="display: none;">
+        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-red-600"></span>
+      </span>
+      <button type="button" x-show="selected.value && !open" x-cloak style="display: none;" @click="clear($event)" class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Clear">{% include 'close.svg' %}</button>
+      <span class="shrink-0 text-slate-400 transition-transform" :class="open && 'rotate-180'">{% include 'angle-down.svg' %}</span>
+    </span>
+  </div>
+  <div
+    x-show="open"
+    x-cloak
+    x-transition
+    id="{{ select_id }}-listbox"
+    role="listbox"
+    aria-labelledby="{{ select_id }}"
+    class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+    @click.outside="open = false"
+  >
+    <div id="{{ select_id }}-options" x-ref="optionsContainer" class="py-0" @click="const o = $event.target.closest('[role=option]'); o && choose(o)"></div>
+  </div>
+  {% if hint is not none and hint|trim %}
+  <p class="mt-1 text-xs text-slate-500">{{ hint }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
