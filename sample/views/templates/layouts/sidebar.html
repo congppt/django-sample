@@ -1,0 +1,23 @@
+{% from 'templates/components/sidebar/sidebar.html' import sidebar %}
+{% set nav_items = request.session.get('nav_items', [
+{
+    'label': 'Home',
+    'url': url('home'),
+    'icon': 'dashboard.svg',
+    'is_active': request.path.startswith(url('home')),
+},
+{
+    'label': 'UI Showcase',
+    'url': url('ui_showcase'),
+    'icon': 'play.svg',
+    'is_active': request.path.startswith(url('ui_showcase')),
+},
+]) %}
+{% set logo_html = '' %}
+{% set footer_html = '<a href="#" class="text-red-100/80 hover:text-white">Logout</a>' %}
+{{ sidebar(
+    items=nav_items,
+    title='Navigation',
+    logo_html=logo_html,
+    footer_html=footer_html,
+) }}

@@ -16,8 +16,13 @@
 
 </head>
 
-<body>
-  <main class="min-h-screen bg-gray-100">
+<body class="min-h-screen bg-gray-100 flex">
+  <!-- {% if request.user.is_authenticated %} -->
+  <!--  Sidebar Navigation Component -->
+  <!-- Top Header Component -->
+  <!-- {% endif %} -->
+  {% include 'templates/layouts/sidebar.html' %}
+  <main class="grow transition-all ease-in-out overflow-auto">
     {% block content %}{% endblock %}
   </main>
 </body>

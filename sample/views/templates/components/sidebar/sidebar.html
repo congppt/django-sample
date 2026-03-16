@@ -1,0 +1,58 @@
+{% macro sidebar(
+items,
+title='',
+logo_html='',
+footer_html=''
+)
+%}
+{% set sidebar_id = random_id('sidebar') %}
+<aside x-data="{ open: false }" class="h-screen w-64 bg-red-700 transition-all ease-in-out overflow-hidden text-white" 
+        :class="open ? 'w-16!' : ''">
+
+  {# Logo Section #}
+  <div class="flex items-center h-16 px-5 shadow-sm">
+    <button @click="open = !open"
+      class="hidden lg:flex items-center rounded-md hover:bg-red-800 transition-colors">
+      <div class="w-6 h-6">
+        {% include 'menu.svg' %}
+      </div>
+    </button>
+
+    <div class="transition-all" :class="open ? 'opacity-0 w-0' : 'opacity-100'">
+      <div class="p-4 flex items-center">
+        <!-- <img src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-8"> -->
+      </div>
+    </div>
+  </div>
+
+  {# Navigation Menu #}
+  <nav class="py-6 px-2 space-y-1 h-full border-r border-gray-200">
+    {% for item in items %}
+    {% set is_active = item.is_active %}
+    <a href="{{ item.url }}"
+      class="flex items-center px-3 rounded-lg transition-all h-14
+                     {% if is_active %}bg-red-800{% else %}hover:bg-red-800{% endif %}">
+
+      <div class="flex-shrink-0 w-6 h-6">
+        {% include item.icon %}
+      </div>
+
+      <div class="transition-all min-w-0 px-2" :class="open ? 'opacity-0' : 'opacity-100'">
+        <div class="flex items-center">
+          <span class="text-sm font-medium leading-tight truncate">{{ item.label }}</span>
+          {% if item.badge %}
+          <span
+            class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
+            {{ item.badge }}
+          </span>
+          {% endif %}
+        </div>
+        {% if item.description %}
+          <p class="text-xs text-gray-500 leading-tight mt-1.5 truncate">{{ item.description }}</p>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </nav>
+</aside>
+{% endmacro %}

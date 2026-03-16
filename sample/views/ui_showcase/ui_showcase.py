@@ -22,6 +22,14 @@ def select_options_json(request):
 class UIShowcasePageView(TemplateView):
     template_name = "ui_showcase/ui_showcase.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        component = self.request.GET.get('component', 'tooltip')
+        context['template_name'] = COMPONENT_TEMPLATES.get(component)
+        if not context['template_name']:
+            raise Http404("Unknown UI component")
+        return context
+
 
 def ui_showcase_delay_demo(request):
     time.sleep(3.5)
@@ -40,4 +48,3 @@ def ui_component_partial(request, component: str):
     if not template_name:
         raise Http404("Unknown UI component")
     return render(request, template_name)
-
