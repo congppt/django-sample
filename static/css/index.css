@@ -3,6 +3,11 @@
 body {
     font-family: 'Nutino', sans-serif;
 }
+
+[x-cloak] {
+    display: none !important;
+}
+
 select,
 ::picker(select) {
     appearance: base-select;
