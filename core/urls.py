@@ -20,10 +20,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 
-from sample import views
+from app import views
 
 urlpatterns = [
-
     path('', RedirectView.as_view(url='/sample/', permanent=False)),
     path('admin/', admin.site.urls),
     path('sample/', include(views)),

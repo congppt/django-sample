@@ -1,6 +1,6 @@
 {% from 'templates/components/table/body.html' import table_body %}
 {% macro table(
-    header_html='',
+    title='',
     filters=[],
     columns=[],
     rows=[],
@@ -20,7 +20,7 @@
 <div id="{{ container_id }}" class="bg-white shadow-sm rounded-lg border border-gray-200" hx-target="this"
     hx-swap="outerHTML">
     <div class="px-6">
-        {{ header_html|safe }}
+        <h1 class="text-4xl font-semibold my-4">{{ title }}</h1>
         <form id="{{ filter_id }}" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" hx-target="#{{ id }}"
             hx-push-url="false" hx-trigger="change" @submit.prevent>
             {# Dynamic filters #}

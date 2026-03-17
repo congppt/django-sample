@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import  reverse
 from django.views.generic import ListView
 
+from app.views.templates.components.table.table import TableContext
 from utils.mock import name, email, phone, address
 
 COLUMNS = [
@@ -26,23 +27,17 @@ if not DATA:
 def get_common_context(request):
     id = request.GET.get('id')
     filter_id = request.GET.get('filter_id')
-    sort = request.GET.get('sort', '')
-    sort_direction = request.GET.get('sort_direction', '')
-    page_index = int(request.GET.get('page_index', 0))
-    page_size = int(request.GET.get('page_size', 10))
-    data = sorted(DATA, key=lambda x: x[sort], reverse=sort_direction == 'desc') if sort else DATA
-    total_count = len(data)
+    table_context = TableContext(
+        request=request,
+        title='Table showcase',
+        columns=COLUMNS,
+        partial_url=reverse('ui_showcase_table_partial'),
+    )
     return {
         'id': id,
         'filter_id': filter_id,
         'columns': COLUMNS,
-        'rows': data[page_index * page_size:min((page_index + 1) * page_size, total_count)],
-        'sort': sort,
-        'sort_direction': sort_direction,
-        'partial_url': reverse('ui_showcase_table_partial'),
-        'page_index': page_index,
-        'page_size': page_size,
-        'total_count': total_count,
+        **table_context.to_response_context(DATA),
     }
 
 class TableListView(ListView):
