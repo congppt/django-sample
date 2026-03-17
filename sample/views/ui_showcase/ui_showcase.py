@@ -4,6 +4,8 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic.base import TemplateView
 
+from . import table as table_demo
+
 ASSET_TYPE_OPTIONS = [
     {"value": "land", "label": "Đất"},
     {"value": "car", "label": "Ô tô"},
@@ -40,6 +42,7 @@ COMPONENT_TEMPLATES = {
     "tooltip": "ui_showcase/tooltip.html",
     "button": "ui_showcase/button.html",
     "select": "ui_showcase/select.html",
+    "table": "ui_showcase/table.html",
 }
 
 
@@ -47,4 +50,11 @@ def ui_component_partial(request, component: str):
     template_name = COMPONENT_TEMPLATES.get(component)
     if not template_name:
         raise Http404("Unknown UI component")
-    return render(request, template_name)
+    context = {}
+    if component == "table":
+        context = {
+            "rows": table_demo.DATA[:5],
+            "total_count": len(table_demo.DATA),
+            "columns": table_demo.COLUMNS,
+        }
+    return render(request, template_name, context)

@@ -1,0 +1,13 @@
+{% from 'templates/components/table/body.html' import table_body %}
+{{ table_body(
+    columns=columns,
+    rows=rows,
+    partial_url=url('ui_showcase_table'),
+    bulk_actions=[],
+    row_actions=[],
+    page_index=0,
+    page_size=10,
+    total_count=total_count,
+)
+}}
+

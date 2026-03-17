@@ -1,4 +1,15 @@
 {% from 'templates/components/tooltip/tooltip.html' import tooltip %}
+{% from 'templates/components/button/button.html' import button %}
+{% macro table_body(
+  columns=[],
+  rows=[],
+  partial_url='',
+  bulk_actions=[],
+  row_actions=[],
+  page_index=0,
+  page_size=10,
+  total_count=0
+) %}
 <div id="table-body">
   <div class="overflow-auto max-h-130">
     <table class="w-full">
@@ -11,11 +22,14 @@
           </th>
           {% endif %}
 
-          {% for column in table_columns %}
+          {% for column in columns %}
           <th scope="col" class="py-3 px-6">
               {% if column.sortable %}
-              <a hx-get="{{ partial_url }}" hx-include="#table-controls"
-                hx-vals='{"sort": "{{ column.name }}", "sort_direction": "{{ "desc" if sort == column.name and sort_direction == "asc" else "asc" }}"}' hx-target="#table-body" hx-push-url="false"
+              <a hx-get="{{ partial_url }}" 
+                hx-include="#table-controls"
+                hx-vals='{"sort": "{{ column.name }}", "sort_direction": "{{ "desc" if sort == column.name and sort_direction == "asc" else "asc" }}"}'
+                hx-target="#table-body"
+                hx-push-url="false"
                 class="ml-1">
                 {{ column.label or column.name }}
                 {% if sort == column.name %}
@@ -30,15 +44,15 @@
           </th>
           {% endfor %}
 
-          {% if table_row_actions|length > 0 %}
+          {% if row_actions %}
           <th scope="col" class="sticky right-0 py-3 px-6 text-center" style="background-color: #F1F3F9;">Thao tác</th>
           {% endif %}
         </tr>
       </thead>
 
       <tbody class="bg-white divide-y divide-gray-200">
-        {% if table_rows|length > 0 %}
-        {% for row in table_rows %}
+        {% if rows %}
+        {% for row in rows %}
         <tr
           class="transition-colors duration-150 hover:bg-gray-200 group divide-x divide-gray-200 {% if loop.index0 % 2 == 0 %}bg-white{% else %}bg-gray-100{% endif %}">
           {% if bulk_actions %}
@@ -47,28 +61,27 @@
           </td>
           {% endif %}
 
-          {% for column in table_columns %}
+          {% for column in columns %}
           {% set need_tooltip= get_attribute(column,'need_tooltip') %}
           {% set wrap_class = 'whitespace-nowrap' if need_tooltip is sameas False else 'break-words min-w-50' %}
           <td class="px-6 py-4 {{ wrap_class }} text-sm text-gray-900 text-{{ column.align or 'center' }}">
             {% set value = get_attribute(row, column.name) %}
-            {# Resolve formatter: support both TableColumn objects (with .format) and plain dict configs #}
             {% set formatter = get_attribute(column, 'formatter') %}
             {% set formatted_value = formatter(value) %}
             {% if need_tooltip %}
             {% call tooltip(value) %}
-            <span>{{ formatted_value }}</span>
+            <span>{{ formatted_value|safe }}</span>
             {% endcall %}
             {% else %}
-            <span>{{ formatted_value }}</span>
+            <span>{{ formatted_value|safe }}</span>
             {% endif %}
           </td>
           {% endfor %}
 
-          {% if table_row_actions|length > 0 %}
+          {% if row_actions %}
           <td class="px-6 py-4 sticky right-0 {% if loop.index0 % 2 == 0 %}bg-white{% else %}bg-gray-100{% endif %}">
             <div class="flex items-center justify-center gap-2">
-              {% for action in table_row_actions %}
+              {% for action in row_actions %}
               {% endfor %}
             </div>
           </td>
@@ -78,7 +91,7 @@
         {% else %}
         <tr>
           <td
-            colspan="{{ table_columns|length + (1 if bulk_actions else 0) + (1 if table_row_actions|length > 0 else 0) }}"
+            colspan="{{ columns|length + (1 if bulk_actions else 0) + (1 if row_actions else 0) }}"
             class="px-6 py-12 text-center text-gray-500">Không có dữ liệu</td>
         </tr>
         {% endif %}
@@ -90,9 +103,9 @@
     <div class="flex items-center space-x-2">
       <p class="text-sm text-gray-700">
         Hiển thị
-        <span class="font-medium">{{ start_item }}</span> -
-        <span class="font-medium">{{ end_item }}</span> trong tổng số
-        <span class="font-medium">{{ total_items }}</span> kết quả
+        <span class="font-medium">{{ page_index * page_size + 1 }}</span> -
+        <span class="font-medium">{{ page_index * page_size + [page_size, rows|length]|min }}</span> trong tổng số
+        <span class="font-medium">{{ total_count }}</span> kết quả
       </p>
       <div>
         <select name="page_size" form="table-controls" hx-get="{{ partial_url }}" hx-include="#table-controls"
@@ -109,24 +122,27 @@
       <div>
         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
           <a hx-get="{{ partial_url }}"
-            hx-vals='{"page": {{ current_page|int - 1 if current_page|int > 1 else 1 }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
+            hx-vals='{"page": {{ page_index }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
             hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
-            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if current_page|int <= 1 %}pointer-events-none opacity-50{% endif %}">«</a>
-
+            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if page_index <= 1 %}pointer-events-none opacity-50{% endif %}">«</a>
+          {% set total_pages = [1, (total_count + page_size - 1) // page_size]|max %}          
+          {% set pages = range([1, page_index|int - 1]|max, [total_pages|int, page_index|int + 1]|min) %}
           {% for page in pages %}
           <a hx-get="{{ partial_url }}"
             hx-vals='{"page": {{ page }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
             hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
-            class="relative inline-flex items-center px-4 py-2 border text-sm font-medium {% if page == current_page %}z-10 bg-blue-50 border-blue-500 text-blue-600{% else %}bg-white border-gray-300 text-gray-500 hover:bg-gray-50{% endif %}">{{
-            page }}</a>
+            class="relative inline-flex items-center px-4 py-2 border text-sm font-medium {% if page == page_index %}z-10 bg-blue-50 border-blue-500 text-blue-600{% else %}bg-white border-gray-300 text-gray-500 hover:bg-gray-50{% endif %}">
+            {{ page }}
+          </a>
           {% endfor %}
 
           <a hx-get="{{ partial_url }}"
-            hx-vals='{"page": {{ current_page|int + 1 if current_page|int < total_pages|int else total_pages }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
+            hx-vals='{"page": {{ page_index + 1 if page_index < total_pages|int else total_pages }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
             hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
-            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if current_page|int >= total_pages|int %}pointer-events-none opacity-50{% endif %}">»</a>
+            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if page_index >= total_pages|int %}pointer-events-none opacity-50{% endif %}">»</a>
         </nav>
       </div>
     </div>
   </div>
 </div>
+{% endmacro %}
