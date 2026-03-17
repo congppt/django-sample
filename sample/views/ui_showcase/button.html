@@ -1,4 +1,5 @@
 {% from 'templates/components/button/button.html' import button %}
+{% from 'templates/components/menu/menu.html' import menu %}
 
 <section class="py-16 space-y-12">
   <header class="mb-10">
@@ -74,5 +75,109 @@
       </div>
     </div>
     <div @close-modal.window="modalOpen = false"></div>
+  </div>
+
+  <div
+    class="space-y-4"
+    x-data="{ menuOpen: false, simpleModalOpen: false, lastMenuAction: null }"
+    @open-simple-modal.window="simpleModalOpen = true"
+    @keydown.escape.window="menuOpen = false"
+    @menu:profile.window="lastMenuAction = 'Profile'"
+    @menu:settings.window="lastMenuAction = 'Settings'"
+    @menu:help.window="lastMenuAction = 'Help & docs'"
+    @menu:duplicate.window="lastMenuAction = 'Duplicate'"
+    @menu:archive.window="lastMenuAction = 'Archive'"
+    @menu:delete.window="lastMenuAction = 'Delete'"
+  >
+    <h3 class="text-sm font-semibold text-slate-900">Modal & HTMX table demo</h3>
+    <div class="relative inline-block" @click.away="menuOpen = false">
+      <div @click="menuOpen = !menuOpen">
+        {{ button('Open context menu', icon='circle.svg', variant='outlined') }}
+      </div>
+
+      <div
+        x-show="menuOpen"
+        x-cloak
+        class="absolute left-0 mt-2 z-30"
+        @click="menuOpen = false"
+      >
+        {{ menu(items=[[
+          {
+            'label': 'Open simple modal',
+            'icon': 'circle.svg',
+            'click_event_name': 'open-simple-modal'
+          },
+          {
+            'label': 'Load table',
+            'icon': 'circle.svg',
+            'loading_text': 'Loading table...',
+            'htmx_event_prefix': 'table:load',
+            'extra_attributes': {
+              'hx-get': url('ui_showcase_table'),
+              'hx-target': '#table-showcase',
+              'hx-swap': 'innerHTML'
+            }
+          }
+        ],[
+          {
+            'label': 'Profile',
+            'icon': 'circle.svg',
+            'click_event_name': 'menu:profile'
+          },
+          {
+            'label': 'Settings',
+            'icon': 'circle.svg',
+            'click_event_name': 'menu:settings'
+          },
+          {
+            'label': 'Help & docs',
+            'icon': 'circle.svg',
+            'href': '#'
+          }
+        ],[
+          {
+            'label': 'Duplicate',
+            'icon': 'circle.svg',
+            'click_event_name': 'menu:duplicate'
+          },
+          {
+            'label': 'Archive',
+            'icon': 'circle.svg',
+            'click_event_name': 'menu:archive'
+          }
+        ],[
+          {
+            'label': 'Delete',
+            'icon': 'circle.svg',
+            'danger': true,
+            'click_event_name': 'menu:delete'
+          }
+        ]]) }}
+      </div>
+    </div>
+
+    <div
+      class="text-xs text-slate-600"
+      x-show="lastMenuAction"
+      x-cloak
+    >
+      Last action: <span class="font-semibold text-slate-900" x-text="lastMenuAction"></span>
+    </div>
+
+    <div x-show="simpleModalOpen" x-cloak
+      class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+      x-transition.opacity>
+      <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+        @click.away="simpleModalOpen = false">
+        <h4 class="text-lg font-semibold text-slate-900">Simple modal</h4>
+        <p class="mt-1 text-sm text-slate-600">
+          This modal is opened by the first button. Close it by clicking outside.
+        </p>
+      </div>
+    </div>
+
+    <div id="table-showcase" class="mt-4 rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+      Click "Load table" to fetch the table demo via HTMX.
+    </div>
   </div>
 </section>

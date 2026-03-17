@@ -1,6 +1,7 @@
 {% from 'templates/components/tooltip/tooltip.html' import tooltip %}
 {% from 'templates/components/button/button.html' import button %}
 {% macro table_body(
+  id='table-body',
   columns=[],
   rows=[],
   partial_url='',
@@ -10,7 +11,7 @@
   page_size=10,
   total_count=0
 ) %}
-<div id="table-body">
+<div id="{{ id }}">
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
