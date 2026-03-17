@@ -1,0 +1,371 @@
+{% macro multiselect(
+  name,
+  options_url,
+  label='',
+  placeholder='Select...',
+  hint=none,
+  required=false,
+  value=none,
+  classes='',
+  reload_events=[],
+  kwargs={}
+) %}
+{% set select_id = random_id('multiselect') %}
+<div
+  class="relative w-full {{ classes }}"
+  x-data="{
+    selectId: '{{ select_id }}',
+    optionsUrl: '{{ options_url }}',
+    reloadEvents: {{ jsonify(reload_events or []) }},
+    open: false,
+    placement: 'bottom',
+    coords: { top: 0, left: 0, width: 0, maxHeight: 240 },
+    margin: 12,
+    repositionListener: null,
+    searchQuery: '',
+    selected: {{ jsonify(value if value is not none else []) }},
+    options: [],
+    isLoading: false,
+    hasLoaded: false,
+    highlightedIndex: -1,
+    reloadListener: null,
+    normalizeSelected() {
+      if (Array.isArray(this.selected)) return;
+      if (this.selected === null || this.selected === undefined || this.selected === '') {
+        this.selected = [];
+        return;
+      }
+      this.selected = [this.selected];
+    },
+    isSelected(val) {
+      this.normalizeSelected();
+      return this.selected.includes(val);
+    },
+    labelFor(val) {
+      const match = this.options.find(option => option.value === val);
+      return match ? match.label : String(val);
+    },
+    get selectedLabels() {
+      this.normalizeSelected();
+      return this.selected.map(val => ({ value: val, label: this.labelFor(val) }));
+    },
+    get filteredOptions() {
+      const q = (this.searchQuery || '').trim();
+      if (!q) return this.options;
+      const normalizedQuery = unaccent(q).toLowerCase();
+      return this.options.filter(option => {
+        const label = unaccent(option.label || '').toLowerCase();
+        return label.includes(normalizedQuery);
+      });
+    },
+    fetchOptions(force = false) {
+      if (this.isLoading || (this.hasLoaded && !force)) return;
+      this.isLoading = true;
+      fetch(this.optionsUrl, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load options');
+          return response.json();
+        })
+        .then(data => {
+          this.options = Array.isArray(data) ? data : [];
+          this.hasLoaded = true;
+          if (this.open) this.$nextTick(() => this.reposition());
+        })
+        .catch(() => {
+          this.options = [];
+          this.hasLoaded = true;
+          if (this.open) this.$nextTick(() => this.reposition());
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+    reposition() {
+      if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return;
+
+      const triggerRect = this.$refs.trigger.getBoundingClientRect();
+      const panelEl = this.$refs.panel;
+
+      const previousDisplay = panelEl.style.display;
+      const previousVisibility = panelEl.style.visibility;
+
+      panelEl.style.visibility = 'hidden';
+      panelEl.style.display = 'block';
+      const panelRect = panelEl.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      const gap = 6;
+      const spaceAbove = triggerRect.top - this.margin;
+      const spaceBelow = viewportHeight - triggerRect.bottom - this.margin;
+
+      let placement = 'bottom';
+      if (spaceBelow < 200 && spaceAbove > spaceBelow) placement = 'top';
+
+      const maxAvailable = placement === 'bottom' ? spaceBelow : spaceAbove;
+      const maxHeight = Math.max(140, Math.min(320, maxAvailable));
+
+      const width = Math.max(0, Math.min(triggerRect.width, viewportWidth - this.margin * 2));
+      let left = triggerRect.left;
+      if (left < this.margin) left = this.margin;
+      const maxLeft = viewportWidth - width - this.margin;
+      if (left > maxLeft) left = maxLeft;
+
+      let top;
+      if (placement === 'bottom') {
+        top = triggerRect.bottom + gap;
+        const maxTop = viewportHeight - maxHeight - this.margin;
+        if (top > maxTop) top = maxTop;
+      } else {
+        top = triggerRect.top - Math.min(panelRect.height, maxHeight) - gap;
+        if (top < this.margin) top = this.margin;
+      }
+
+      this.placement = placement;
+      this.coords = { top, left, width, maxHeight };
+
+      panelEl.style.display = previousDisplay;
+      panelEl.style.visibility = previousVisibility;
+    },
+    openDropdown() {
+      if (this.open) return;
+      this.open = true;
+      this.highlightedIndex = -1;
+      this.fetchOptions();
+      this.$nextTick(() => {
+        this.reposition();
+        this.$refs.searchInput?.focus();
+      });
+    },
+    closeDropdown() {
+      this.open = false;
+      this.highlightedIndex = -1;
+      this.searchQuery = '';
+    },
+    clear(e) {
+      e.stopPropagation();
+      this.selected = [];
+      this.searchQuery = '';
+      this.highlightedIndex = -1;
+    },
+    toggle(val) {
+      this.normalizeSelected();
+      const idx = this.selected.indexOf(val);
+      if (idx >= 0) {
+        this.selected.splice(idx, 1);
+      } else {
+        this.selected.push(val);
+      }
+    },
+    remove(val) {
+      this.normalizeSelected();
+      const idx = this.selected.indexOf(val);
+      if (idx >= 0) this.selected.splice(idx, 1);
+    },
+    chooseByIndex(index) {
+      const option = this.filteredOptions[index];
+      if (!option) return;
+      this.toggle(option.value);
+    },
+    onArrowDown() {
+      if (!this.open) {
+        this.openDropdown();
+        return;
+      }
+      const maxIndex = this.filteredOptions.length - 1;
+      if (maxIndex < 0) return;
+      if (this.highlightedIndex < maxIndex) {
+        this.highlightedIndex++;
+      } else {
+        this.highlightedIndex = 0;
+      }
+    },
+    onArrowUp() {
+      if (!this.open) {
+        this.openDropdown();
+        return;
+      }
+      const maxIndex = this.filteredOptions.length - 1;
+      if (maxIndex < 0) return;
+      if (this.highlightedIndex > 0) {
+        this.highlightedIndex--;
+      } else {
+        this.highlightedIndex = maxIndex;
+      }
+    },
+    onEnter() {
+      if (!this.open) {
+        this.openDropdown();
+        return;
+      }
+      if (this.highlightedIndex >= 0) {
+        this.chooseByIndex(this.highlightedIndex);
+      }
+    },
+    init() {
+      this.normalizeSelected();
+      this.fetchOptions();
+      this.repositionListener = () => {
+        if (this.open) this.reposition();
+      };
+      window.addEventListener('resize', this.repositionListener);
+      window.addEventListener('scroll', this.repositionListener, true);
+      if (Array.isArray(this.reloadEvents) && this.reloadEvents.length) {
+        this.reloadListener = () => {
+          this.hasLoaded = false;
+          this.fetchOptions(true);
+        };
+        this.reloadEvents.forEach(eventName => {
+          window.addEventListener(eventName, this.reloadListener);
+        });
+      }
+    },
+    destroy() {
+      if (this.repositionListener) {
+        window.removeEventListener('resize', this.repositionListener);
+        window.removeEventListener('scroll', this.repositionListener, true);
+      }
+      if (this.reloadListener) {
+        this.reloadEvents.forEach(eventName => {
+          window.removeEventListener(eventName, this.reloadListener);
+        });
+      }
+    },
+  }"
+  @keydown.escape.window="closeDropdown()"
+  @click.outside="closeDropdown()"
+>
+  <template x-for="val in selected" :key="`selected-${val}`">
+    <input type="hidden" name="{{ name }}" :value="val" />
+  </template>
+
+  {% if label is not none and label|trim %}
+  <label for="{{ select_id }}" class="mb-1 flex items-center gap-1.5 text-sm font-medium text-slate-700">
+    <span>{{ label }}{% if required %} <span class="text-red-600">*</span>{% endif %}</span>
+  </label>
+  {% endif %}
+
+  <div
+    x-ref="trigger"
+    role="combobox"
+    :aria-expanded="open"
+    aria-haspopup="listbox"
+    aria-controls="{{ select_id }}-listbox"
+    :aria-activedescendant="open && highlightedIndex >= 0 ? `${selectId}-option-${highlightedIndex}` : null"
+    id="{{ select_id }}"
+    tabindex="0"
+    @click="open ? closeDropdown() : openDropdown()"
+    @keydown.down.prevent="onArrowDown()"
+    @keydown.up.prevent="onArrowUp()"
+    @keydown.enter.prevent="onEnter()"
+    class="flex min-h-9 w-full items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
+  >
+    <div x-show="!open" class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+      <template x-if="selectedLabels.length === 0">
+        <span class="truncate text-slate-500">{{ placeholder|trim }}</span>
+      </template>
+      <template x-if="selectedLabels.length > 0">
+        <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+          <template x-for="(item, idx) in selectedLabels.slice(0, 3)" :key="`chip-${item.value}`">
+            <span class="inline-flex max-w-full items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-800">
+              <span class="truncate" x-text="item.label"></span>
+              <button
+                type="button"
+                class="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                @click.stop="remove(item.value)"
+                :aria-label="`Remove ${item.label}`"
+              >
+                {% include 'close.svg' %}
+              </button>
+            </span>
+          </template>
+          <template x-if="selectedLabels.length > 3">
+            <span class="text-xs text-slate-500" x-text="`+${selectedLabels.length - 3}`"></span>
+          </template>
+        </div>
+      </template>
+    </div>
+
+    <input
+      x-ref="searchInput"
+      x-show="open"
+      x-model="searchQuery"
+      type="text"
+      class="flex-1 min-w-0 border-0 bg-transparent p-0 text-slate-900 outline-none focus:ring-0"
+      placeholder="{{ placeholder|trim }}"
+      @click.stop
+    />
+
+    <span class="flex shrink-0 items-center gap-0.5">
+      <span x-show="isLoading" x-cloak style="display: none;" class="inline-flex text-slate-400 shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin">
+        {% include 'spinner.svg' %}
+      </span>
+      <button
+        type="button"
+        x-show="selected.length > 0"
+        x-cloak
+        style="display: none;"
+        @click="clear($event)"
+        class="h-4 w-4 shrink-0 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        aria-label="Clear"
+      >
+        {% include 'close.svg' %}
+      </button>
+      <span class="relative inline-flex h-4 w-4 items-center justify-center text-slate-400">
+        <span x-show="!open" x-cloak class="absolute inset-0 flex items-center justify-center">
+          {% include 'angle-down.svg' %}
+        </span>
+        <span x-show="open" x-cloak class="absolute inset-0 flex items-center justify-center rotate-180">
+          {% include 'angle-down.svg' %}
+        </span>
+      </span>
+    </span>
+  </div>
+
+  <div
+    x-show="open"
+    x-ref="panel"
+    x-cloak
+    x-transition
+    id="{{ select_id }}-listbox"
+    role="listbox"
+    aria-labelledby="{{ select_id }}"
+    class="fixed z-50 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+    :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
+    :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
+  >
+    <template x-if="!isLoading && filteredOptions.length === 0">
+      <div class="px-3 py-2 text-xs text-slate-500">
+        Không tìm thấy kết quả phù hợp.
+      </div>
+    </template>
+    <template x-for="(option, index) in filteredOptions" :key="option.value">
+      <div
+        role="option"
+        :id="`${selectId}-option-${index}`"
+        :aria-selected="isSelected(option.value)"
+        @click="toggle(option.value)"
+        class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
+        :class="[
+          index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+          isSelected(option.value) ? 'font-medium' : ''
+        ]"
+      >
+        <span class="mr-2 break-words whitespace-normal" x-text="option.label"></span>
+        <span x-show="isSelected(option.value)" x-cloak class="shrink-0 text-red-600">
+          ✓
+        </span>
+      </div>
+    </template>
+  </div>
+
+  {% if hint is not none and hint|trim %}
+  <p class="mt-1 text-xs text-slate-500">{{ hint|trim }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+

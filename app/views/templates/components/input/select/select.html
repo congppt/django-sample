@@ -18,6 +18,10 @@
     optionsUrl: '{{ options_url }}',
     reloadEvents: {{ jsonify(reload_events or []) }},
     open: false,
+    placement: 'bottom',
+    coords: { top: 0, left: 0, width: 0, maxHeight: 240 },
+    margin: 12,
+    repositionListener: null,
     searchQuery: '',
     selected: {{ jsonify(value) }},
     options: [],
@@ -54,21 +58,73 @@
         .then(data => {
           this.options = Array.isArray(data) ? data : [];
           this.hasLoaded = true;
+          if (this.open) this.$nextTick(() => this.reposition());
         })
         .catch(() => {
           this.options = [];
           this.hasLoaded = true;
+          if (this.open) this.$nextTick(() => this.reposition());
         })
         .finally(() => {
           this.isLoading = false;
         });
+    },
+    reposition() {
+      if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return;
+
+      const triggerRect = this.$refs.trigger.getBoundingClientRect();
+      const panelEl = this.$refs.panel;
+
+      const previousDisplay = panelEl.style.display;
+      const previousVisibility = panelEl.style.visibility;
+
+      panelEl.style.visibility = 'hidden';
+      panelEl.style.display = 'block';
+      const panelRect = panelEl.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      const gap = 6;
+      const spaceAbove = triggerRect.top - this.margin;
+      const spaceBelow = viewportHeight - triggerRect.bottom - this.margin;
+
+      let placement = 'bottom';
+      if (spaceBelow < 200 && spaceAbove > spaceBelow) placement = 'top';
+
+      const maxAvailable = placement === 'bottom' ? spaceBelow : spaceAbove;
+      const maxHeight = Math.max(140, Math.min(320, maxAvailable));
+
+      const width = Math.max(0, Math.min(triggerRect.width, viewportWidth - this.margin * 2));
+      let left = triggerRect.left;
+      if (left < this.margin) left = this.margin;
+      const maxLeft = viewportWidth - width - this.margin;
+      if (left > maxLeft) left = maxLeft;
+
+      let top;
+      if (placement === 'bottom') {
+        top = triggerRect.bottom + gap;
+        const maxTop = viewportHeight - maxHeight - this.margin;
+        if (top > maxTop) top = maxTop;
+      } else {
+        top = triggerRect.top - Math.min(panelRect.height, maxHeight) - gap;
+        if (top < this.margin) top = this.margin;
+      }
+
+      this.placement = placement;
+      this.coords = { top, left, width, maxHeight };
+
+      panelEl.style.display = previousDisplay;
+      panelEl.style.visibility = previousVisibility;
     },
     openDropdown() {
       if (this.open) return;
       this.open = true;
       this.highlightedIndex = -1;
       this.fetchOptions();
-      this.$nextTick(() => this.$refs.searchInput?.focus());
+      this.$nextTick(() => {
+        this.reposition();
+        this.$refs.searchInput?.focus();
+      });
     },
     closeDropdown() {
       this.open = false;
@@ -124,6 +180,11 @@
     },
     init() {
       this.fetchOptions();
+      this.repositionListener = () => {
+        if (this.open) this.reposition();
+      };
+      window.addEventListener('resize', this.repositionListener);
+      window.addEventListener('scroll', this.repositionListener, true);
       if (Array.isArray(this.reloadEvents) && this.reloadEvents.length) {
         this.reloadListener = () => {
           this.hasLoaded = false;
@@ -135,6 +196,10 @@
       }
     },
     destroy() {
+      if (this.repositionListener) {
+        window.removeEventListener('resize', this.repositionListener);
+        window.removeEventListener('scroll', this.repositionListener, true);
+      }
       if (this.reloadListener) {
         this.reloadEvents.forEach(eventName => {
           window.removeEventListener(eventName, this.reloadListener);
@@ -206,12 +271,15 @@
   </div>
   <div
     x-show="open"
+    x-ref="panel"
     x-cloak
     x-transition
     id="{{ select_id }}-listbox"
     role="listbox"
     aria-labelledby="{{ select_id }}"
-    class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+    class="fixed z-50 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+    :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
+    :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
   >
     <template x-if="!isLoading && filteredOptions.length === 0">
       <div class="px-3 py-2 text-xs text-slate-500">
