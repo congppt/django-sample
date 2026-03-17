@@ -92,7 +92,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'environment': 'core.jinja2.environment',
-            'auto_reload': DEBUG,
+            **({'cache_size': 0} if DEBUG else {}),
         },
     },
     # For admin application

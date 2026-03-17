@@ -8,8 +8,8 @@ COLUMNS = [
     {'name': 'id', 'label': 'ID', 'sortable': True, 'formatter': lambda x: x},
     {'name': 'name', 'label': 'Name', 'sortable': True, 'formatter': lambda x: x.upper()},
     {'name': 'email', 'label': 'Email', 'sortable': True, 'formatter': lambda x: x},
-    {'name': 'phone', 'label': 'Phone', 'sortable': True, 'formatter': lambda x: x},
-    {'name': 'address', 'label': 'Address', 'sortable': True, 'formatter': lambda x: x},
+    {'name': 'phone', 'label': 'Phone', 'sortable': False, 'formatter': lambda x: x},
+    {'name': 'address', 'label': 'Addresssssss sssssssssssssssss ssssssssssssss sssssssssssssssss', 'sortable': True, 'formatter': lambda x: x},
 ]
 DATA = []
 if not DATA:

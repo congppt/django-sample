@@ -18,7 +18,7 @@ total_count=0
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
-        class="sticky top-0 z-10 h-12 text-xs tracking-wider cursor-pointer whitespace-nowrap"
+        class="sticky top-0 z-10 h-12 text-xs tracking-wider cursor-pointer break-words"
         style="background-color: #F1F3F9; color: #1F2937;">
         <tr>
           {% if bulk_actions %}
@@ -28,11 +28,21 @@ total_count=0
           {% endif %}
 
           {% for column in columns %}
-          <th scope="col" class="py-3 px-6">
+          <th scope="col" class="h-1 max-w-50">
             {% if column.sortable %}
-            <a hx-get="{{ partial_url }}" hx-include="#{{ filter_id }}"
-              hx-vals='{"page_index": {{ page_index }}, "page_size": {{ page_size }}, "sort": "{{ column.name }}", "sort_direction": "{{ "desc" if sort == column.name and sort_direction == "asc" else "asc" }}", "id": "{{ id }}", "filter_id": "{{ filter_id }}" }'
-              hx-target="#{{ id }}" hx-push-url="false" class="ml-1">
+            {% set paging_params = {
+              'page_index': page_index,
+              'page_size': page_size,
+              'sort': column.name,
+              'sort_direction': "desc" if sort == column.name and sort_direction == "asc" else "asc",
+              'id': id,
+              'filter_id': filter_id,
+            } %}
+            <a 
+              hx-get="{{ partial_url }}"
+              hx-include="#{{ filter_id }}"
+              hx-vals='{{ jsonify(paging_params) }}'
+              hx-target="#{{ id }}" hx-push-url="false" class="flex h-full justify-center items-center">
               {{ column.label or column.name }}
               {% if sort == column.name %}
               {% if sort_direction == 'asc' %}▲{% else %}▼{% endif %}
@@ -109,8 +119,15 @@ total_count=0
         <span class="font-medium">{{ total_count }}</span> kết quả
       </p>
       <div>
+        {% set paging_params = {
+          'page_index': 0,
+          'sort': sort,
+          'sort_direction': sort_direction,
+          'id': id,
+          'filter_id': filter_id,
+        } %}
         <select name="page_size" form="{{ filter_id }}" hx-get="{{ partial_url }}" hx-include="#{{ filter_id }}"
-          hx-vals='{"page_index": 0, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}", "id": "{{ id }}", "filter_id": "{{ filter_id }}" }' hx-target="#{{ id }}"
+          hx-vals='{{ jsonify(paging_params) }}' hx-target="#{{ id }}"
           hx-push-url="false"
           class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
           <option value="10" {% if page_size|int==10 %}selected{% endif %}>10 dòng/trang</option>
@@ -146,7 +163,7 @@ total_count=0
             }
           ) }}
           {% set total_pages = [1, (total_count + page_size - 1) // page_size]|max %}
-          {% for page in range([1, page_index|int -2]|max, [total_pages|int + 1, page_index|int + 4]|min) %}
+          {% for page in range([1, page_index|int -1]|max, [total_pages|int + 1, page_index|int + 4]|min) %}
             {{ button(
               text=page,
               variant='outlined' if page - 1 != page_index else 'filled',
