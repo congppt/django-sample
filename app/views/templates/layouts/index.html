@@ -17,19 +17,19 @@
   <title>Sample - {% block title %}{% endblock %}</title>
   {% block styles %}
   {% endblock %}
-
+  {% block pre_scripts %}
+  {% endblock %}
 </head>
 
 <body class="min-h-screen bg-gray-100 flex">
-  <!-- {% if request.user.is_authenticated %} -->
-  <!--  Sidebar Navigation Component -->
-  <!-- Top Header Component -->
-  <!-- {% endif %} -->
   {% include 'templates/layouts/sidebar.html' %}
   <main class="grow transition-all ease-in-out overflow-auto h-screen">
-    {% block content %}{% endblock %}
+    {% include 'templates/layouts/header.html' %}
+    <div class="mt-16">
+      {% block content %}{% endblock %}
+    </div>
   </main>
 </body>
-{% block scripts %}
+{% block post_scripts %}
 {% endblock %}
 </html>
