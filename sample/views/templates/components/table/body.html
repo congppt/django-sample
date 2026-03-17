@@ -18,7 +18,7 @@ total_count=0
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
-        class="sticky top-0 z-10 h-12 text-xs tracking-wider cursor-pointer break-words"
+        class="sticky top-0 z-10 h-12 text-sm tracking-wider cursor-pointer break-words"
         style="background-color: #F1F3F9; color: #1F2937;">
         <tr>
           {% if bulk_actions %}
@@ -30,26 +30,29 @@ total_count=0
           {% for column in columns %}
           <th scope="col" class="h-1 max-w-50">
             {% if column.sortable %}
-            {% set paging_params = {
-              'page_index': page_index,
-              'page_size': page_size,
-              'sort': column.name,
-              'sort_direction': "desc" if sort == column.name and sort_direction == "asc" else "asc",
-              'id': id,
-              'filter_id': filter_id,
-            } %}
-            <a 
-              hx-get="{{ partial_url }}"
-              hx-include="#{{ filter_id }}"
-              hx-vals='{{ jsonify(paging_params) }}'
-              hx-target="#{{ id }}" hx-push-url="false" class="flex h-full justify-center items-center">
-              {{ column.label or column.name }}
-              {% if sort == column.name %}
-              {% if sort_direction == 'asc' %}▲{% else %}▼{% endif %}
-              {% else %}
-              ⇅
-              {% endif %}
-            </a>
+            {% set sort_direction_icon = 'arrow-up-down.svg' if sort != column.name else 'arrow-up.svg' if sort_direction == 'asc' else 'arrow-down.svg' %}
+            {{ button(
+              text=column.label or column.name,
+              icon=sort_direction_icon,
+              icon_position='right',
+              variant='transparent',
+              class='font-bold! text-sm',
+              extra_attributes={
+                'hx-get': partial_url,
+                'hx-include': '#' + filter_id,
+                'hx-target': '#' + id,
+                'hx-push-url': 'false',
+                'hx-vals': jsonify(
+                  {
+                    'page_index':  page_index,
+                    'sort':  column.name,
+                    'sort_direction': "desc" if sort == column.name and sort_direction == "asc" else "asc",
+                    'id': id,
+                    'filter_id': filter_id,
+                  }
+                ),
+              }
+            ) }}
             {% else %}
             <span>{{ column.label or column.name }}</span>
             {% endif %}
