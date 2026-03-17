@@ -1,21 +1,25 @@
 {% from 'templates/components/tooltip/tooltip.html' import tooltip %}
 {% from 'templates/components/button/button.html' import button %}
 {% macro table_body(
-  id='table-body',
-  columns=[],
-  rows=[],
-  partial_url='',
-  bulk_actions=[],
-  row_actions=[],
-  page_index=0,
-  page_size=10,
-  total_count=0
+id='table-body',
+filter_id='table-filter',
+columns=[],
+rows=[],
+sort='',
+sort_direction='',
+partial_url='',
+bulk_actions=[],
+row_actions=[],
+page_index=0,
+page_size=10,
+total_count=0
 ) %}
 <div id="{{ id }}">
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
-        class="sticky top-0 z-10 h-12 text-xs font-medium uppercase tracking-wider cursor-pointer whitespace-nowrap" style="background-color: #F1F3F9; color: #1F2937;">
+        class="sticky top-0 z-10 h-12 text-xs tracking-wider cursor-pointer whitespace-nowrap"
+        style="background-color: #F1F3F9; color: #1F2937;">
         <tr>
           {% if bulk_actions %}
           <th class="py-3 px-6">
@@ -25,23 +29,20 @@
 
           {% for column in columns %}
           <th scope="col" class="py-3 px-6">
-              {% if column.sortable %}
-              <a hx-get="{{ partial_url }}" 
-                hx-include="#table-controls"
-                hx-vals='{"sort": "{{ column.name }}", "sort_direction": "{{ "desc" if sort == column.name and sort_direction == "asc" else "asc" }}"}'
-                hx-target="#table-body"
-                hx-push-url="false"
-                class="ml-1">
-                {{ column.label or column.name }}
-                {% if sort == column.name %}
-                {% if sort_direction == 'asc' %}▲{% else %}▼{% endif %}
-                {% else %}
-                ⇅
-                {% endif %}
-              </a>
+            {% if column.sortable %}
+            <a hx-get="{{ partial_url }}" hx-include="#{{ filter_id }}"
+              hx-vals='{"page_index": {{ page_index }}, "page_size": {{ page_size }}, "sort": "{{ column.name }}", "sort_direction": "{{ "desc" if sort == column.name and sort_direction == "asc" else "asc" }}", "id": "{{ id }}", "filter_id": "{{ filter_id }}" }'
+              hx-target="#{{ id }}" hx-push-url="false" class="ml-1">
+              {{ column.label or column.name }}
+              {% if sort == column.name %}
+              {% if sort_direction == 'asc' %}▲{% else %}▼{% endif %}
               {% else %}
-              <span>{{ column.label or column.name }}</span>
+              ⇅
               {% endif %}
+            </a>
+            {% else %}
+            <span>{{ column.label or column.name }}</span>
+            {% endif %}
           </th>
           {% endfor %}
 
@@ -91,8 +92,7 @@
         {% endfor %}
         {% else %}
         <tr>
-          <td
-            colspan="{{ columns|length + (1 if bulk_actions else 0) + (1 if row_actions else 0) }}"
+          <td colspan="{{ columns|length + (1 if bulk_actions else 0) + (1 if row_actions else 0) }}"
             class="px-6 py-12 text-center text-gray-500">Không có dữ liệu</td>
         </tr>
         {% endif %}
@@ -102,17 +102,17 @@
 
   <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
     <div class="flex items-center space-x-2">
-      <p class="text-sm text-gray-700">
+      <p class="text-sm text-red-700">
         Hiển thị
         <span class="font-medium">{{ page_index * page_size + 1 }}</span> -
         <span class="font-medium">{{ page_index * page_size + [page_size, rows|length]|min }}</span> trong tổng số
         <span class="font-medium">{{ total_count }}</span> kết quả
       </p>
       <div>
-        <select name="page_size" form="table-controls" hx-get="{{ partial_url }}" hx-include="#table-controls"
-          hx-vals='{"page": 1, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}"}' hx-target="#table-body"
+        <select name="page_size" form="{{ filter_id }}" hx-get="{{ partial_url }}" hx-include="#{{ filter_id }}"
+          hx-vals='{"page_index": {{ page_index }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}", "id": "{{ id }}", "filter_id": "{{ filter_id }}" }' hx-target="#{{ id }}"
           hx-push-url="false"
-          class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+          class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
           <option value="10" {% if page_size|int==10 %}selected{% endif %}>10 dòng/trang</option>
           <option value="25" {% if page_size|int==25 %}selected{% endif %}>25 dòng/trang</option>
           <option value="50" {% if page_size|int==50 %}selected{% endif %}>50 dòng/trang</option>
@@ -122,25 +122,75 @@
     <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-end">
       <div>
         <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-          <a hx-get="{{ partial_url }}"
-            hx-vals='{"page": {{ page_index }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
-            hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
-            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if page_index <= 1 %}pointer-events-none opacity-50{% endif %}">«</a>
-          {% set total_pages = [1, (total_count + page_size - 1) // page_size]|max %}          
-          {% set pages = range([1, page_index|int - 1]|max, [total_pages|int, page_index|int + 1]|min) %}
-          {% for page in pages %}
-          <a hx-get="{{ partial_url }}"
-            hx-vals='{"page": {{ page }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
-            hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
-            class="relative inline-flex items-center px-4 py-2 border text-sm font-medium {% if page == page_index %}z-10 bg-blue-50 border-blue-500 text-blue-600{% else %}bg-white border-gray-300 text-gray-500 hover:bg-gray-50{% endif %}">
-            {{ page }}
-          </a>
+          {{ button(
+            text='',
+            icon='angle-left.svg',
+            icon_position='left',
+            variant='outlined',
+            class='rounded-none rounded-l-md',
+            disabled=page_index <= 0,
+            extra_attributes={
+              'hx-get': partial_url,
+              'hx-include': '#' + filter_id,
+              'hx-target': '#' + id,
+              'hx-push-url': 'false',
+              'hx-vals': jsonify(
+                {
+                  'page_index':  page_index - 1,
+                  'sort':  sort,
+                  'sort_direction': sort_direction,
+                  'id': id,
+                  'filter_id': filter_id,
+                }
+              ),
+            }
+          ) }}
+          {% set total_pages = [1, (total_count + page_size - 1) // page_size]|max %}
+          {% for page in range([1, page_index|int -2]|max, [total_pages|int + 1, page_index|int + 4]|min) %}
+            {{ button(
+              text=page,
+              variant='outlined' if page - 1 != page_index else 'filled',
+              class='rounded-none',
+              extra_attributes={
+                'hx-get': partial_url,
+                'hx-include': '#' + filter_id,
+                'hx-target': '#' + id,
+                'hx-push-url': 'false',
+                'hx-vals': jsonify(
+                  {
+                    'page_index': page - 1,
+                    'sort': sort,
+                    'sort_direction': sort_direction,
+                    'id': id,
+                    'filter_id': filter_id,
+                  }
+                ),
+              }
+            ) }}
           {% endfor %}
-
-          <a hx-get="{{ partial_url }}"
-            hx-vals='{"page": {{ page_index + 1 if page_index < total_pages|int else total_pages }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}" }'
-            hx-include="#table-controls" hx-target="#table-body" hx-push-url="false"
-            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 {% if page_index >= total_pages|int %}pointer-events-none opacity-50{% endif %}">»</a>
+          {{ button(
+            text='',
+            icon='angle-right.svg',
+            icon_position='right',
+            variant='outlined',
+            class='rounded-none rounded-r-md',
+            disabled=page_index >= total_pages|int - 1,
+            extra_attributes={
+              'hx-get': partial_url,
+              'hx-include': '#' + filter_id,
+              'hx-target': '#' + id,
+              'hx-push-url': 'false',
+              'hx-vals': jsonify(
+                {
+                  'page_index':  page_index + 1 if page_index < total_pages|int else total_pages,
+                  'sort':  sort,
+                  'sort_direction': sort_direction,
+                  'id': id,
+                  'filter_id': filter_id,
+                }
+              ),
+            }
+          ) }}
         </nav>
       </div>
     </div>

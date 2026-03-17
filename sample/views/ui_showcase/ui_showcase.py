@@ -1,10 +1,8 @@
 import time
 
 from django.http import Http404, HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render, reverse
 from django.views.generic.base import TemplateView
-
-from . import table as table_demo
 
 ASSET_TYPE_OPTIONS = [
     {"value": "land", "label": "Đất"},
@@ -52,9 +50,5 @@ def ui_component_partial(request, component: str):
         raise Http404("Unknown UI component")
     context = {}
     if component == "table":
-        context = {
-            "rows": table_demo.DATA[:5],
-            "total_count": len(table_demo.DATA),
-            "columns": table_demo.COLUMNS,
-        }
+        return redirect(reverse('ui_showcase_table'))
     return render(request, template_name, context)

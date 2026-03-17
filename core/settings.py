@@ -92,6 +92,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'environment': 'core.jinja2.environment',
+            'auto_reload': DEBUG,
         },
     },
     # For admin application
