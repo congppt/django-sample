@@ -81,6 +81,8 @@
     {% endif %}
     {% if text %}
     <span x-show="!loading">{{ text }}</span>
+    {% endif %}
+    {% if text|length >= loading_text|length %}
     <span x-show="loading" x-cloak style="display: none;">{{ loading_text }}</span>
     {% endif %}
     {% if icon and icon_position == 'right' %}

@@ -110,7 +110,7 @@ total_count=0
       </p>
       <div>
         <select name="page_size" form="{{ filter_id }}" hx-get="{{ partial_url }}" hx-include="#{{ filter_id }}"
-          hx-vals='{"page_index": {{ page_index }}, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}", "id": "{{ id }}", "filter_id": "{{ filter_id }}" }' hx-target="#{{ id }}"
+          hx-vals='{"page_index": 0, "sort": "{{ sort }}", "sort_direction": "{{ sort_direction }}", "id": "{{ id }}", "filter_id": "{{ filter_id }}" }' hx-target="#{{ id }}"
           hx-push-url="false"
           class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
           <option value="10" {% if page_size|int==10 %}selected{% endif %}>10 dòng/trang</option>
