@@ -25,8 +25,6 @@ if not DATA:
         DATA.append(data)
 
 def get_common_context(request):
-    id = request.GET.get('id')
-    filter_id = request.GET.get('filter_id')
     table_context = TableContext(
         request=request,
         title='Table showcase',
@@ -34,9 +32,6 @@ def get_common_context(request):
         partial_url=reverse('ui_showcase_table_partial'),
     )
     return {
-        'id': id,
-        'filter_id': filter_id,
-        'columns': COLUMNS,
         **table_context.to_response_context(DATA),
     }
 

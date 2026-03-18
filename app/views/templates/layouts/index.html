@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="#">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
   <!-- Support Alpine.js maintain state for HTMX swap content -->
    <!-- Usage: hx-ext="morph" hx-swap="morph"-->
   <script src="https://unpkg.com/htmx-ext-alpine-morph@2.0.0/alpine-morph.js"></script>
@@ -16,7 +17,6 @@
   <!-- Support input mask -->
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="{{ static('css/index.css') }}"/>
   <script src="{{ static('js/index.js') }}"></script>
   <title>Sample - {% block title %}{% endblock %}</title>

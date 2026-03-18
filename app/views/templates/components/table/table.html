@@ -17,10 +17,10 @@
 {% set container_id = random_id('table-container') %}
 {% set id = random_id('table') %}
 {% set filter_id = random_id('table-filter') %}
-<div id="{{ container_id }}" class="bg-white shadow-sm rounded-lg border border-gray-200">
+<div id="{{ container_id }}" class="bg-white shadow-sm rounded-lg border border-gray-200" x-id="['table', 'filter']" :hx-include="'#' + $id('filter')">
     <div class="px-6">
         <h1 class="text-4xl font-semibold my-4">{{ title }}</h1>
-        <form id="{{ filter_id }}" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" hx-target="#{{ id }}"
+        <form :id="$id('filter')" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" :hx-target="'#' + $id('table')"
             hx-push-url="false" hx-trigger="change" @submit.prevent>
             {# Dynamic filters #}
             {% for filter in filters|default([]) %}
@@ -33,10 +33,6 @@
             {% endfor %}
             
             {# Persist paging/sort in form #}
-            <input type="hidden" name="filter_id" value="{{ filter_id }}">
-            <input type="hidden" name="id" value="{{ id }}">
-            <input type="hidden" name="page_index" value="{{ page_index or 0 }}">
-            <input type="hidden" name="page_size" value="{{ page_size or 10 }}">
             <input type="hidden" name="sort" value="{{ sort }}">
             <input type="hidden" name="sort_direction" value="{{ sort_direction }}">
         </form>

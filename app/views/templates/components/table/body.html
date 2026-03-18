@@ -14,7 +14,7 @@ page_index=0,
 page_size=10,
 total_count=0
 ) %}
-<div id="{{ id }}" hx-swap="outerHTML">
+<div :id="$id('table')" hx-ext="alpine-morph" hx-swap="morph">
   <div class="overflow-auto max-h-130">
     <table class="w-full">
       <thead
@@ -39,16 +39,14 @@ total_count=0
               class='font-bold! text-sm',
               extra_attributes={
                 'hx-get': partial_url,
-                'hx-include': '#' + filter_id,
-                'hx-target': '#' + id,
+                'hx-include': 'inherit, [name="page_size"], [name="page_index"]',
+                ':hx-target': "'#' + $id('table')",
                 'hx-push-url': 'false',
                 'hx-vals': jsonify(
                   {
                     'page_index':  page_index,
                     'sort':  column.name,
-                    'sort_direction': "desc" if sort == column.name and sort_direction == "asc" else "asc",
-                    'id': id,
-                    'filter_id': filter_id,
+                    'sort_direction': "desc" if sort == column.name and sort_direction == "asc" else "asc"
                   }
                 ),
               }
@@ -123,14 +121,16 @@ total_count=0
       </p>
       <div>
         {% set paging_params = {
-          'page_index': 0,
           'sort': sort,
           'sort_direction': sort_direction,
-          'id': id,
-          'filter_id': filter_id,
         } %}
-        <select name="page_size" form="{{ filter_id }}" hx-get="{{ partial_url }}" hx-include="#{{ filter_id }}"
-          hx-vals='{{ jsonify(paging_params) }}' hx-target="#{{ id }}"
+        <select 
+          name="page_size" 
+          form="$id('filter')"
+          hx-get="{{ partial_url }}"
+          hx-include="inherit",
+          hx-vals='{{ jsonify(paging_params) }}',
+          :hx-target="'#' + $id('table')"
           hx-push-url="false"
           class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
           <option value="10" {% if page_size|int==10 %}selected{% endif %}>10 dòng/trang</option>
@@ -151,16 +151,14 @@ total_count=0
             disabled=page_index <= 0,
             extra_attributes={
               'hx-get': partial_url,
-              'hx-include': '#' + filter_id,
-              'hx-target': '#' + id,
+              'hx-include': 'inherit, [name="page_size"], [name="sort"], [name="sort_direction"]',
+              ':hx-target': "'#' + $id('table')",
               'hx-push-url': 'false',
               'hx-vals': jsonify(
                 {
-                  'page_index':  page_index - 1,
-                  'sort':  sort,
+                  'page_index': page_index - 1,
+                  'sort': sort,
                   'sort_direction': sort_direction,
-                  'id': id,
-                  'filter_id': filter_id,
                 }
               ),
             }
@@ -173,16 +171,14 @@ total_count=0
               class='rounded-none',
               extra_attributes={
                 'hx-get': partial_url,
-                'hx-include': '#' + filter_id,
-                'hx-target': '#' + id,
+                'hx-include': "inherit, [name='page_size'], [name='sort'], [name='sort_direction']",
+                ':hx-target': "'#' + $id('table')",
                 'hx-push-url': 'false',
                 'hx-vals': jsonify(
                   {
                     'page_index': page - 1,
                     'sort': sort,
                     'sort_direction': sort_direction,
-                    'id': id,
-                    'filter_id': filter_id,
                   }
                 ),
               }
@@ -197,16 +193,14 @@ total_count=0
             disabled=page_index >= total_pages|int - 1,
             extra_attributes={
               'hx-get': partial_url,
-              'hx-include': '#' + filter_id,
-              'hx-target': '#' + id,
+              'hx-include': "inherit, [name='page_size'], [name='sort'], [name='sort_direction']",
+              ':hx-target': "'#' + $id('table')",
               'hx-push-url': 'false',
               'hx-vals': jsonify(
                 {
                   'page_index':  page_index + 1 if page_index < total_pages|int else total_pages,
-                  'sort':  sort,
+                  'sort': sort,
                   'sort_direction': sort_direction,
-                  'id': id,
-                  'filter_id': filter_id,
                 }
               ),
             }
