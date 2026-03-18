@@ -30,7 +30,7 @@ footer_html=''
   </div>
 
   {# Navigation Menu #}
-  <nav class="py-6 px-2 space-y-1 h-full border-r border-gray-200">
+  <nav class="py-6 px-2 space-y-1 h-full border-r border-gray-200" hx-boost="true">
     {% for item in items %}
     {% set is_active = item.is_active %}
     <a href="{{ item.url }}"

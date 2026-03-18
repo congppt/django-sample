@@ -17,8 +17,7 @@
 {% set container_id = random_id('table-container') %}
 {% set id = random_id('table') %}
 {% set filter_id = random_id('table-filter') %}
-<div id="{{ container_id }}" class="bg-white shadow-sm rounded-lg border border-gray-200" hx-target="this"
-    hx-swap="outerHTML">
+<div id="{{ container_id }}" class="bg-white shadow-sm rounded-lg border border-gray-200">
     <div class="px-6">
         <h1 class="text-4xl font-semibold my-4">{{ title }}</h1>
         <form id="{{ filter_id }}" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" hx-target="#{{ id }}"

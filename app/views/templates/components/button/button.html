@@ -9,7 +9,6 @@
   disabled=false,
   loading_text='Submitting...',
   href=none,
-  click_event_name=none,
   htmx_event_prefix=none,
   class='',
   extra_attributes={}
@@ -62,8 +61,8 @@
           });
           {% endif %}
         };
-        document.body.addEventListener('htmx:beforeRequest', this.beforeHTMX);
-        document.body.addEventListener('htmx:afterRequest', this.afterHTMX);
+        document.body.addEventListener('htmx:before-request', this.beforeHTMX);
+        document.body.addEventListener('htmx:after-request', this.afterHTMX);
       },
       destroy() {
         document.body.removeEventListener('htmx:beforeRequest', this.beforeHTMX);
@@ -72,9 +71,6 @@
     }"
     {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
     x-bind:aria-busy="loading"
-    {% if click_event_name is not none and click_event_name|trim %}
-      @click="$el.dispatchEvent(new CustomEvent('{{ click_event_name }}', { bubbles: true, detail: { originalEvent: $event } }))"
-    {% endif %}
   >
     {% if icon and icon_position == 'left' %}
     <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>

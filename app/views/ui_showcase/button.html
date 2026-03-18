@@ -90,71 +90,66 @@
     @menu:delete.window="lastMenuAction = 'Delete'"
   >
     <h3 class="text-sm font-semibold text-slate-900">Modal & HTMX table demo</h3>
-    <div class="relative inline-block" @click.away="menuOpen = false">
-      <div @click="menuOpen = !menuOpen">
-        {{ button('Open context menu', icon='circle.svg', variant='outlined') }}
-      </div>
-
-      <div
-        x-show="menuOpen"
-        x-cloak
-        class="absolute left-0 mt-2 z-30"
-        @click="menuOpen = false"
-      >
-        {{ menu(items=[[
-          {
-            'label': 'Open simple modal',
-            'icon': 'circle.svg',
-            'click_event_name': 'open-simple-modal'
-          },
-          {
-            'label': 'Load table',
-            'icon': 'circle.svg',
-            'loading_text': 'Loading table...',
-            'htmx_event_prefix': 'table:load',
-            'extra_attributes': {
-              'hx-get': url('ui_showcase_table'),
-              'hx-target': '#table-showcase',
-              'hx-swap': 'innerHTML'
-            }
+    {% set groups = [
+      [
+        {
+          'label': 'Open simple modal',
+          'icon': 'circle.svg',
+          'click_event_name': 'open-simple-modal'
+        },
+        {
+          'label': 'Load table',
+          'icon': 'circle.svg',
+          'loading_text': 'Loading table...',
+          'htmx_event_prefix': 'table:load',
+          'extra_attributes': {
+            'hx-get': url('ui_showcase_table'),
+            'hx-target': '#table-showcase',
+            'hx-swap': 'innerHTML'
           }
-        ],[
-          {
-            'label': 'Profile',
-            'icon': 'circle.svg',
-            'click_event_name': 'menu:profile'
-          },
-          {
-            'label': 'Settings',
-            'icon': 'circle.svg',
-            'click_event_name': 'menu:settings'
-          },
-          {
-            'label': 'Help & docs',
-            'icon': 'circle.svg',
-            'href': '#'
-          }
-        ],[
-          {
-            'label': 'Duplicate',
-            'icon': 'circle.svg',
-            'click_event_name': 'menu:duplicate'
-          },
-          {
-            'label': 'Archive',
-            'icon': 'circle.svg',
-            'click_event_name': 'menu:archive'
-          }
-        ],[
-          {
-            'label': 'Delete',
-            'icon': 'circle.svg',
-            'danger': true,
-            'click_event_name': 'menu:delete'
-          }
-        ]]) }}
-      </div>
-    </div>
+        }
+      ],
+      [
+        {
+          'label': 'Profile',
+          'icon': 'circle.svg',
+          'click_event_name': 'menu:profile'
+        },
+        {
+          'label': 'Settings',
+          'icon': 'circle.svg',
+          'click_event_name': 'menu:settings'
+        },
+        {
+          'label': 'Help & docs',
+          'icon': 'circle.svg',
+          'href': '#'
+        }
+      ],
+      [
+        {
+          'label': 'Duplicate',
+          'icon': 'circle.svg',
+          'click_event_name': 'menu:duplicate'
+        },
+        {
+          'label': 'Archive',
+          'icon': 'circle.svg',
+          'click_event_name': 'menu:archive'
+        }
+      ],
+      [
+        {
+          'label': 'Delete',
+          'icon': 'circle.svg',
+          'danger': true,
+          'click_event_name': 'menu:delete'
+        }
+      ]
+    ] %}
+      {% call menu(groups=groups, position='right') %}
+      {{ button('Open context menu', icon='circle.svg', variant='outlined') }}
+      {% endcall %}
 
     <div
       class="text-xs text-slate-600"
