@@ -50,7 +50,7 @@
     @form:submit:success.window="modalOpen = false; $refs.modalForm && $refs.modalForm.reset()">
     <h3 class="text-sm font-semibold text-slate-900">Modal & form</h3>
     <div class="flex flex-wrap items-center gap-4">
-      {{ button('Open modal', icon='circle.svg', variant='filled', click_event_name='open-modal') }}
+      {{ button('Open modal', icon='circle.svg', variant='filled', extra_attributes={ '@click': '$dispatch("open-modal")' }) }}
     </div>
     <div x-show="modalOpen" x-cloak
       class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm" x-transition.opacity>
@@ -65,7 +65,7 @@
               class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Your name">
           </label>
           <div class="flex items-center justify-end gap-3">
-            {{ button('Close', variant='outlined', click_event_name='close-modal') }}
+            {{ button('Close', variant='outlined', extra_attributes={ '@click': '$dispatch("close-modal")' }) }}
             {{ button('Submit', icon='circle.svg', variant='filled', loading_text='Sending...',
             htmx_event_prefix='form:submit', extra_attributes={'hx-get': url('ui_showcase_delay_demo'), 'hx-target':
             '#modal-form-result', 'hx-swap': 'innerHTML'}) }}
@@ -95,7 +95,7 @@
         {
           'label': 'Open simple modal',
           'icon': 'circle.svg',
-          'click_event_name': 'open-simple-modal'
+          'extra_attributes': { '@click': '$dispatch("open-simple-modal")' }
         },
         {
           'label': 'Load table',
@@ -113,12 +113,12 @@
         {
           'label': 'Profile',
           'icon': 'circle.svg',
-          'click_event_name': 'menu:profile'
+          'extra_attributes': { '@click': '$dispatch("menu:profile")' }
         },
         {
           'label': 'Settings',
           'icon': 'circle.svg',
-          'click_event_name': 'menu:settings'
+          'extra_attributes': { '@click': '$dispatch("menu:settings")' }
         },
         {
           'label': 'Help & docs',
@@ -130,12 +130,12 @@
         {
           'label': 'Duplicate',
           'icon': 'circle.svg',
-          'click_event_name': 'menu:duplicate'
+          'extra_attributes': { '@click': '$dispatch("menu:duplicate")' }
         },
         {
           'label': 'Archive',
           'icon': 'circle.svg',
-          'click_event_name': 'menu:archive'
+          'extra_attributes': { '@click': '$dispatch("menu:archive")' }
         }
       ],
       [
@@ -143,7 +143,7 @@
           'label': 'Delete',
           'icon': 'circle.svg',
           'danger': true,
-          'click_event_name': 'menu:delete'
+          'extra_attributes': { '@click': '$dispatch("menu:delete")' }
         }
       ]
     ] %}

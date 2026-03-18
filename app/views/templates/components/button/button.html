@@ -65,8 +65,8 @@
         document.body.addEventListener('htmx:after-request', this.afterHTMX);
       },
       destroy() {
-        document.body.removeEventListener('htmx:beforeRequest', this.beforeHTMX);
-        document.body.removeEventListener('htmx:afterRequest', this.afterHTMX);
+        document.body.removeEventListener('htmx:before-request', this.beforeHTMX);
+        document.body.removeEventListener('htmx:after-request', this.afterHTMX);
       },
     }"
     {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
