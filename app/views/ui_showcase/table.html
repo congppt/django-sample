@@ -1,11 +1,11 @@
 {% from 'templates/components/table/table.html' import table %}
 {{ table(
-    title='Table showcase',
+    header='<h1 class="text-4xl font-semibold my-4">Table showcase</h1>',
     filters=[],
     columns=columns,
     rows=rows,
     partial_url=url('ui_showcase_table_partial'),
-    actions=[],
+    actions=actions,
     bulk_actions=[],
     row_actions=[],
     page_index=0,

@@ -1,6 +1,7 @@
+{% from 'templates/components/button/button.html' import button %}
 {% from 'templates/components/table/body.html' import table_body %}
 {% macro table(
-    title='',
+    header='',
     filters=[],
     columns=[],
     rows=[],
@@ -16,7 +17,7 @@
 ) %}
 <div class="bg-white shadow-sm rounded-lg border border-gray-200" x-id="['table', 'filter']" :hx-include="'#' + $id('filter')">
     <div class="px-6">
-        <h1 class="text-4xl font-semibold my-4">{{ title }}</h1>
+        {{ header|safe }}
         <form :id="$id('filter')" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" :hx-target="'#' + $id('table')"
             hx-push-url="false" hx-trigger="change" @submit.prevent>
             {# Dynamic filters #}
@@ -38,14 +39,26 @@
         {% if actions %}
         <div class="mb-4 flex flex-wrap gap-2 justify-end">
             {% for action in actions %}
+            {{
+                button(
+                    text=action.label,
+                    icon=action.icon,
+                    icon_position=action.icon_position,
+                    variant=action.variant,
+                    disabled=action.disabled,
+                    loading_text=action.loading_text,
+                    href=action.href,
+                    htmx_event_prefix=action.htmx_event_prefix,
+                    class=action.klass,
+                    extra_attributes=action.extra_attributes,
+                )
+            }}
             {% endfor %}
         </div>
         {% endif %}
 
     </div>
     {{ table_body(
-        id=id,
-        filter_id=filter_id,
         columns=columns,
         rows=rows,
         sort=sort,

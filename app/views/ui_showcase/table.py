@@ -2,7 +2,8 @@ from django.contrib.auth.models import User
 from django.shortcuts import  reverse
 from django.views.generic import ListView
 
-from app.views.templates.components.table.table import TableContext
+from ..templates.components.button import Button
+from ..templates.components.table import TableContext, TableAction
 from utils.mock import name, email, phone, address
 
 COLUMNS = [
@@ -30,6 +31,41 @@ def get_common_context(request):
         title='Table showcase',
         columns=COLUMNS,
         partial_url=reverse('ui_showcase_table_partial'),
+        actions=[
+            TableAction(
+                label='Add',
+                icon='plus.svg',
+                icon_position=Button.IconPosition.LEFT,
+                variant=Button.Variant.FILLED,
+                disabled=False,
+                loading_text='Adding...',
+                href="https://google.com",
+            ),
+            TableAction(
+                label='Edit',
+                icon='edit.svg',
+                icon_position=Button.IconPosition.LEFT,
+                variant=Button.Variant.OUTLINED,
+                disabled=False,
+                loading_text='Editing...',
+                extra_attributes={
+                    'hx-get': reverse('ui_showcase_component', kwargs={'component': 'select'}),
+                    'hx-target': '#ui-showcase-content',
+                    'hx-swap': 'innerHTML',
+                },
+            ),
+            TableAction(
+                label='Delete',
+                icon='trash.svg',
+                icon_position=Button.IconPosition.LEFT,
+                variant=Button.Variant.OUTLINED,
+                disabled=False,
+                loading_text='Deleting...',
+                extra_attributes={
+                    '@click': '$dispatch("modal:open", { "url": "https://google.com" });console.log("modal opened")'
+                }
+            )
+        ]
     )
     return {
         **table_context.to_response_context(DATA),

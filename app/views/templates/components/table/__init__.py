@@ -5,6 +5,8 @@ from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 from pydantic import BaseModel, ConfigDict
 
+from ..button import Button
+
 from .....utils.format import format_date, format_datetime, format_number, format_text, format_badge
 
 class SortDirection(StrEnum):
@@ -96,8 +98,9 @@ class TableColumn(BaseModel):
         return formatter(value) if formatter else value
 
 # Not implemented yet
-class TableAction(BaseModel):
-    button: str
+class TableAction(Button):
+    pass
+
     
 
 class TableContext(BaseModel):
@@ -110,7 +113,7 @@ class TableContext(BaseModel):
     filters: list[FilterParam] = []
     actions: list[TableAction] = []
     row_actions: list[TableAction] = []
-    bulk_actions: list = []
+    bulk_actions: list[TableAction] = []
 
     def __create_data_context(self, data_set: QuerySet | list[Any], params: PaginationParam, transformer = None):
         if isinstance(data_set, QuerySet):
