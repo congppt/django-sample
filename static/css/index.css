@@ -7,7 +7,10 @@ body {
 [x-cloak] {
     display: none !important;
 }
-
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
 select,
 ::picker(select) {
     appearance: base-select;

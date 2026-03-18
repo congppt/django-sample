@@ -1,5 +1,6 @@
 {% from 'templates/components/button/button.html' import button %}
 {% from 'templates/components/table/body.html' import table_body %}
+{% from 'templates/components/input/base/input.html' import input %}
 {% macro table(
     header='',
     filters=[],
@@ -19,13 +20,25 @@
     <div class="px-6">
         {{ header|safe }}
         <form :id="$id('filter')" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" :hx-target="'#' + $id('table')"
-            hx-push-url="false" hx-trigger="change" @submit.prevent>
+            hx-push-url="false" hx-trigger="change, keyup changed delay:800ms" @submit.prevent>
             {# Dynamic filters #}
             {% for filter in filters|default([]) %}
-            {% if filter.type != 'hidden' %}
-            <div class="filter-wrapper flex-1 min-w-0 {% if filter.type == 'daterange' %}flex-[1_1_100%]{% else %}min-w-[200px]{% endif %}" 
-                 data-filter-type="{{ filter.type }}"
-                 data-filter-name="{{ filter.name }}">
+            {% if not filter.type in ['hidden', 'boolean'] %}
+            <div class="filter-wrapper flex-1">
+                    {{ input(
+                        name=filter.name,
+                        label=filter.label,
+                        type=filter.type,
+                        value=filter.value,
+                        disabled=filter.disabled,
+                        hint=filter.hint,
+                        placeholder=filter.placeholder,
+                        required=filter.required,
+                        class=filter.klass,
+                        tooltip_content=filter.tooltip_content,
+                        tooltip_axis=filter.tooltip_axis,
+                        validate=filter.client_validate
+                    ) }}
             </div>
             {% endif %}
             {% endfor %}

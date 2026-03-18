@@ -40,6 +40,7 @@ COMPONENT_TEMPLATES = {
     "tooltip": "ui_showcase/tooltip.html",
     "button": "ui_showcase/button.html",
     "select": "ui_showcase/select.html",
+    "input": "ui_showcase/input.html",
     "table": "ui_showcase/table.html",
 }
 

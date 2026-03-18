@@ -1,0 +1,111 @@
+{% from 'templates/components/input/base/input.html' import input %}
+
+<section class="py-16 space-y-12">
+  <header class="mb-10">
+    <h2 class="text-2xl font-semibold text-slate-900">Input</h2>
+    <p class="mt-2 text-sm text-slate-600">
+      Base input with labels, hints/errors, disabled state, and optional masks (number, currency, date).
+    </p>
+  </header>
+
+  <div class="grid gap-10 lg:grid-cols-2">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Text</h3>
+      <p class="mt-1 text-xs text-slate-600">Default text field with a hint and tooltip.</p>
+      <div class="mt-4">
+        {{ input(
+          name='demo_text',
+          label='Full name',
+          placeholder='Jane Doe',
+          hint='Use your legal name as it appears on documents.',
+          tooltip_content='This is used for contracts and invoices.',
+          type='text'
+        ) }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Number (masked)</h3>
+      <p class="mt-1 text-xs text-slate-600">Allows only numeric input and formats with grouping spaces.</p>
+      <div class="mt-4">
+        {{ input(
+          name='demo_number',
+          label='Units',
+          placeholder='0',
+          hint='Example: 12000',
+          type='number',
+          value=12000
+        ) }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Currency (masked)</h3>
+      <p class="mt-1 text-xs text-slate-600">Useful when you want a visually grouped amount.</p>
+      <div class="mt-4">
+        {{ input(
+          name='demo_currency',
+          label='Budget',
+          placeholder='0',
+          hint='Grouping is visual; submitted value matches what you typed.',
+          type='currency',
+          value='2500000'
+        ) }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Password</h3>
+      <p class="mt-1 text-xs text-slate-600">Includes a visibility toggle button.</p>
+      <div class="mt-4">
+        {{ input(
+          name='demo_password',
+          label='Password',
+          placeholder='••••••••',
+          hint='At least 8 characters.',
+          type='password'
+        ) }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Date (masked)</h3>
+      <p class="mt-1 text-xs text-slate-600">Simple dd/mm/yyyy mask (for display only).</p>
+      <div class="mt-4">
+        {{ input(
+          name='demo_date',
+          label='Date',
+          placeholder='dd/mm/yyyy',
+          hint='Example: 18/03/2026',
+          type='date',
+          value='18/03/2026'
+        ) }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Disabled + error</h3>
+      <p class="mt-1 text-xs text-slate-600">Shows disabled styling and error state.</p>
+      <div class="mt-4 space-y-6">
+        {{ input(
+          name='demo_disabled',
+          label='Disabled field',
+          placeholder='Can’t edit',
+          hint='This field is read-only in this state.',
+          disabled=true,
+          type='text',
+          value='Locked'
+        ) }}
+        {{ input(
+          name='demo_error',
+          label='Email',
+          placeholder='name@company.com',
+          error_message='Please enter a valid email address.',
+          type='text',
+          value='not-an-email'
+        ) }}
+      </div>
+    </div>
+  </div>
+</section>
+

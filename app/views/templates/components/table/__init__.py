@@ -9,6 +9,36 @@ from ..button import Button
 
 from .....utils.format import format_date, format_datetime, format_number, format_text, format_badge
 
+class FilterParam(BaseModel):
+    class Type(StrEnum):
+        SELECT = "select"
+        MULTISELECT = "multiselect"
+        TEXT = "text"
+        NUMBER = "number"
+        DATE = "date"
+        DATETIME = "datetime"
+        HIDDEN = "hidden"
+    class Option(BaseModel):
+        value: Any
+        label: str
+    # QuerySet mode: query(value) -> Q
+    # list[Any] mode: query(value) -> predicate(row) -> bool
+    query: Callable[[Any], Any]
+    name: str
+    label: str | None = None
+    placeholder: str | None = None
+    hint: str | None = None
+    required: bool = False
+    type: Type = Type.TEXT
+    value: Any | None = None
+    disabled: bool = False
+    error_message: str | None = None
+    klass: str | None = None
+    tooltip_content: str | None = None
+    tooltip_axis: str = 'vertical'
+    client_validate: str | None = None
+    extra_attributes: dict = {},
+
 class SortDirection(StrEnum):
     ASC = "asc"
     DESC = "desc"
@@ -21,7 +51,7 @@ class PaginationParam(BaseModel):
     filters: list[Any]
 
     @classmethod
-    def from_table_context(cls, ctx: 'TableContext'):
+    def from_table_context(cls, ctx: 'TableContext', source_type: type):
         params = {
             'page_index': int(ctx.request.GET.get('page_index', '0') or 0),
             'page_size': int(ctx.request.GET.get('page_size', '10') or 10),
@@ -42,27 +72,6 @@ class PaginationParam(BaseModel):
             params['sort'] = sort
             params['sort_direction'] = ctx.request.GET.get('sort_direction', 'asc')   
         return PaginationParam(**params)
-
-class FilterParam(BaseModel):
-    class Type(StrEnum):
-        SELECT = "select"
-        MULTISELECT = "multiselect"
-        TEXT = "text"
-        NUMBER = "number"
-        BOOLEAN = "boolean"
-        DATE = "date"
-        DATETIME = "datetime"
-        HIDDEN = "hidden"
-    class Option(BaseModel):
-        value: Any
-        label: str
-    name: str
-    query: Callable[[Any], Any]
-    label: str
-    type: Type = Type.TEXT
-    value: Any | None = None
-    clearable: bool = True
-    fetch_url: str | None = None
 
 class TableColumn(BaseModel):
     class Type(StrEnum):
@@ -153,7 +162,9 @@ class TableContext(BaseModel):
             if transformer:
                 page_rows = [transformer(row) for row in page_rows]
         else:
-            # Filter not supported yet for list[Any]
+            # Filter is partially supported for list[Any]
+            for filter in params.filters:
+                data_set = [row for row in data_set if filter(row)]
             full_data = sorted(data_set, key=lambda x: x[params.sort], reverse=params.sort_direction == SortDirection.DESC) if params.sort else data_set
             total_count = len(full_data)
             page_rows = full_data[params.page_index* params.page_size : (params.page_index + 1) * params.page_size]
@@ -173,7 +184,7 @@ class TableContext(BaseModel):
         data_set: QuerySet | list[Any],
         transformer: Callable[[Any], Any] | None = None,
     ):
-        params = PaginationParam.from_table_context(self)
+        params = PaginationParam.from_table_context(self, data_set.__class__)
         data_context = self.__create_data_context(data_set, params, transformer)
         return {
             **data_context,

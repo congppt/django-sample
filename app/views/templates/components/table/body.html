@@ -113,7 +113,7 @@ total_count=0
     <div class="flex items-center space-x-2">
       <p class="text-sm text-red-700">
         Hiển thị
-        <span class="font-medium">{{ page_index * page_size + 1 }}</span> -
+        <span class="font-medium">{{ (page_index * page_size + 1) if rows else 0 }}</span> -
         <span class="font-medium">{{ page_index * page_size + [page_size, rows|length]|min }}</span> trong tổng số
         <span class="font-medium">{{ total_count }}</span> kết quả
       </p>

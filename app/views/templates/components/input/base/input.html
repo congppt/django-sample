@@ -1,0 +1,143 @@
+{% from 'templates/components/tooltip/tooltip.html' import tooltip %}
+{% macro input(
+  name,
+  label='',
+  placeholder='',
+  hint='',
+  required=false,
+  type='text',
+  value='',
+  disabled=false,
+  error_message='',
+  class='',
+  tooltip_content=none,
+  tooltip_axis='vertical',
+  validate=none,
+  extra_attributes={}
+) %}
+<!-- validate is a JS function that takes a value and returns false if value is valid, else return message-->
+{% set focus_color = 'slate-600' %}
+{% set error_color = 'red-600' %}
+{% set disabled_color = 'slate-400' %}
+{% set mask_map = {
+  'currency': "$money($input, '.', ' ', 0)",
+  'number': "$money($input, '.', ' ', 2)",
+  'date': "99/99/9999"
+} %}
+{% set mask = mask_map.get(type, '') %}
+<div
+  x-id="['input']"
+  x-data="{
+    disabled: {{ jsonify(disabled) }},
+    focused: false,
+    type: '{{ type }}',
+    show: {{ jsonify(type != 'password') }},
+    errorMessage: '{{ error_message or '' }}',
+    hint: '{{ hint or '' }}',
+    value: {{ jsonify(value) }} || '',
+    displayValue: {{ jsonify(value) }} || '',
+    timeout: null,
+    input: null,
+    parseInput(val, oldVal) {
+      let cleanVal = val
+      if (['currency', 'number'].includes(this.type)) {
+        cleanVal = val.replace(/[^\d.]/g, '');
+      }
+      {% if validate %}
+      this.errorMessage = {{ validate }}(cleanVal);
+      if (this.errorMessage) {
+        this.displayValue = null
+        this.value = null
+        return
+      }
+      {% endif %}
+      this.value = cleanVal
+      const input = this.$refs.input
+      if (!input) return
+      input.value = cleanVal
+    },
+    
+  }"
+  x-init="$watch('displayValue', (val, oldVal) => parseInput(val, oldVal))"
+>
+  <input 
+    type="hidden" 
+    name="{{ name }}" 
+    :value="value"
+    x-ref="input"
+    
+  />
+  {% if label is not none and label|trim %}
+  <label
+    :for="$id('input')"
+    class="mb-1 flex items-center gap-1.5 text-slate-700 text-sm font-medium transition-colors"
+    :class="disabled
+      ? 'text-{{ disabled_color }}'
+      : (focused
+          ? 'text-{{ focus_color }}'
+          : '')"
+  >
+    <span>{{ label }}{% if required %} <span class="text-red-600">*</span>{% endif %}</span>
+
+    {% if tooltip_content is not none and tooltip_content|trim %}
+      {% call tooltip(tooltip_content, tooltip_axis) %}
+        <button
+          type="button"
+          class="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold text-slate-500 bg-white hover:bg-slate-50"
+          tabindex="-1"
+        >
+          ?
+        </button>
+      {% endcall %}
+    {% endif %}
+  </label>
+  {% endif %}
+
+  <div class="relative">
+    <input
+      :id="$id('input')"
+      :type="type === 'password' ? (show ? 'text' : 'password') : 'text'"
+      x-model="displayValue"
+      {% if mask %}
+      x-mask:dynamic="{{ mask }}"
+      {% endif %}
+      placeholder="{{ placeholder }}"
+      @focus="if (!disabled) focused = true"
+      @blur="focused = false"
+      :disabled="disabled"
+      class="block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition outline-none {{ class }}"
+      :class="disabled
+        ? 'border-slate-200 bg-slate-100 text-{{ disabled_color }} cursor-not-allowed'
+        : (errorMessage
+            ? 'border-{{ error_color }} focus:border-{{ error_color }} focus:ring-1 focus:ring-{{ error_color }}'
+            : (focused
+                ? 'border-{{ focus_color }} focus:border-{{ focus_color }} focus:ring-1 focus:ring-{{ focus_color }}'
+                : ''))"
+      {{ extra_attributes | xmlattr }}
+    />
+
+    {% if type == 'password' %}
+    <button
+      type="button"
+      @click="show = !show"
+      :disabled="disabled"
+      class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none"
+      :class="disabled
+        ? 'text-{{ disabled_color }} cursor-not-allowed'
+        : (errorMessage ? 'text-{{ error_color }}' : (focused ? 'text-{{ focus_color }}' : ''))"
+      aria-label="Toggle password visibility"
+    >
+      <span x-show="show" class="w-4 h-4">
+        {% include 'eye-off.svg' %}
+      </span>
+      <span x-show="!show" class="w-4 h-4">
+        {% include 'eye.svg' %}
+      </span>
+    </button>
+    {% endif %}
+  </div>
+  <template x-if="errorMessage || hint">
+    <p class="mt-2 text-xs" :class="errorMessage ? 'text-{{ error_color }}' : 'text-slate-400'" x-text="errorMessage ? errorMessage : hint"></p>
+  </template>
+</div>
+{% endmacro %}

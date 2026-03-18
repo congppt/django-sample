@@ -3,15 +3,35 @@ from django.shortcuts import  reverse
 from django.views.generic import ListView
 
 from ..templates.components.button import Button
-from ..templates.components.table import TableContext, TableAction
+from ..templates.components.table import TableContext, TableAction, FilterParam, TableColumn
 from utils.mock import name, email, phone, address
 
 COLUMNS = [
-    {'name': 'id', 'label': 'ID', 'sortable': True, 'formatter': lambda x: x},
-    {'name': 'name', 'label': 'Name', 'sortable': True, 'formatter': lambda x: x.upper()},
-    {'name': 'email', 'label': 'Email', 'sortable': True, 'formatter': lambda x: x},
-    {'name': 'phone', 'label': 'Phone', 'sortable': False, 'formatter': lambda x: x},
-    {'name': 'address', 'label': 'Address', 'sortable': True, 'formatter': lambda x: x},
+    TableColumn(
+        name='id',
+        label='ID',
+        sortable=True,
+    ),
+    TableColumn(
+        name='name',
+        label='Name',
+        sortable=True,
+    ),
+    TableColumn(
+        name='email',
+        label='Email',
+        sortable=True,
+    ),
+    TableColumn(
+        name='phone',
+        label='Phone',
+        sortable=False,
+    ),
+    TableColumn(
+        name='address',
+        label='Address',
+        sortable=True,
+    ),
 ]
 DATA = []
 if not DATA:
@@ -30,6 +50,36 @@ def get_common_context(request):
         request=request,
         title='Table showcase',
         columns=COLUMNS,
+        filters=[
+            FilterParam(
+                name='name',
+                label='Name',
+                placeholder='Enter name',
+                type=FilterParam.Type.TEXT,
+                query=lambda value: (lambda target: target['name'].startswith(value)),
+            ),
+            FilterParam(
+                name='email',
+                label='Email', 
+                placeholder='Enter email',
+                type=FilterParam.Type.TEXT,
+                query=lambda value: (lambda target: target['email'].startswith(value))
+            ),
+            FilterParam(
+                name='phone',
+                label='Phone',
+                placeholder='Enter phone',
+                type=FilterParam.Type.TEXT,
+                query=lambda value: (lambda target: target['phone'].startswith(value))
+            ),
+            FilterParam(
+                name='address',
+                label='Address',
+                placeholder='Enter address',
+                type=FilterParam.Type.TEXT,
+                query=lambda value: (lambda target: target['address'].startswith(value))
+            ),
+        ],
         partial_url=reverse('ui_showcase_table_partial'),
         actions=[
             TableAction(
