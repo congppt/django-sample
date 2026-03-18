@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
-from django.shortcuts import  reverse
+from django.http import JsonResponse
+from django.shortcuts import reverse
 from django.views.generic import ListView
 
 from ..templates.components.button import Button
@@ -46,11 +47,30 @@ if not DATA:
         DATA.append(data)
 
 def get_common_context(request):
+    # Prefill the select UI with the active `id` query param (if any).
+    # This helps the dropdown show the currently selected label.
+    raw_id = request.GET.get("id")
+    try:
+        id_value = int(raw_id) if raw_id not in (None, "") else None
+    except (TypeError, ValueError):
+        id_value = None
+
     table_context = TableContext(
         request=request,
         title='Table showcase',
         columns=COLUMNS,
         filters=[
+            FilterParam(
+                name='id',
+                label='ID',
+                placeholder='Select ID',
+                type=FilterParam.Type.SELECT,
+                value=id_value,
+                query=lambda value: (lambda target: str(target.get('id')) == str(value)),
+                extra_attributes={
+                    "options_url": reverse('ui_showcase_table_id_options'),
+                },
+            ),
             FilterParam(
                 name='name',
                 label='Name',
@@ -134,3 +154,9 @@ class TableListPartialView(ListView):
 
     def get_context_data(self, **kwargs):
         return get_common_context(self.request)
+
+
+def table_id_options_json(request):
+    """Return table ID options for the `id` filter select."""
+    options = [{"value": i, "label": str(i)} for i in range(99)]
+    return JsonResponse(options, safe=False)
