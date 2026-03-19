@@ -5,14 +5,14 @@ from django.shortcuts import redirect, render, reverse
 from django.views.generic.base import TemplateView
 
 ASSET_TYPE_OPTIONS = [
-    {"value": "land", "label": "Đất"},
-    {"value": "car", "label": "Ô tô"},
-    {"value": "house", "label": "Nhà, vật kiến trúc"},
-    {"value": "machinery", "label": "Thiết bị máy móc"},
-    {"value": "other", "label": "Tài sản khác"},
-    {"value": "perennial", "label": "Cây lâu năm, súc vật làm việc và cho sản phẩm"},
-    {"value": "long1", "label": "Tài sản cố định hữu hình khác (máy móc, thiết bị, phương tiện vận tải, dụng cụ quản lý) và tài sản cố định vô hình"},
-    {"value": "long2", "label": "Cây lâu năm, súc vật làm việc và cho sản phẩm, và các tài sản cố định khác có thời gian sử dụng trên 12 tháng"},
+    {"value": "land", "label": "Đất", "klass": "bg-emerald-600 text-white"},
+    {"value": "car", "label": "Ô tô", "klass": "bg-indigo-600 text-white"},
+    {"value": "house", "label": "Nhà, vật kiến trúc", "klass": "bg-amber-500 text-white"},
+    {"value": "machinery", "label": "Thiết bị máy móc", "klass": "bg-slate-900 text-white"},
+    {"value": "other", "label": "Tài sản khác", "klass": "bg-slate-100 text-slate-800"},
+    {"value": "perennial", "label": "Cây lâu năm, súc vật làm việc và cho sản phẩm", "klass": "bg-pink-600 text-white"},
+    {"value": "long1", "label": "Tài sản cố định hữu hình khác (máy móc, thiết bị, phương tiện vận tải, dụng cụ quản lý) và tài sản cố định vô hình", "klass": "bg-fuchsia-600 text-white"},
+    {"value": "long2", "label": "Cây lâu năm, súc vật làm việc và cho sản phẩm, và các tài sản cố định khác có thời gian sử dụng trên 12 tháng", "klass": "bg-cyan-600 text-white"},
 ]
 
 def select_options_json(request):

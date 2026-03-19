@@ -53,13 +53,20 @@
         this.normalizeSelected();
         return this.selected.includes(val);
       },
+      optionFor(val) {
+        return this.options.find(option => option.value === val);
+      },
       labelFor(val) {
-        const match = this.options.find(option => option.value === val);
+        const match = this.optionFor(val);
         return match ? match.label : String(val);
+      },
+      klassFor(val) {
+        const match = this.optionFor(val);
+        return match?.klass || '';
       },
       get selectedLabels() {
         this.normalizeSelected();
-        return this.selected.map(val => ({ value: val, label: this.labelFor(val) }));
+        return this.selected.map(val => ({ value: val, label: this.labelFor(val), klass: this.klassFor(val) }));
       },
       get filteredOptions() {
         const q = (this.searchQuery || '').trim();
@@ -281,11 +288,14 @@
           <div class="flex flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-auto">
             
             <template x-for="(item, idx) in selectedLabels.slice(0, 3)" :key="`chip-${item.value}`">
-              <span class="inline-flex flex-shrink max-w-80 items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-800">
+              <span
+                class="inline-flex flex-shrink max-w-80 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
+                :class="item.klass || 'bg-slate-100 text-slate-800'"
+              >
                 <span class="truncate" x-text="item.label"></span>
                 <button
                   type="button"
-                  class="flex-shrink-0 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                  class="flex-shrink-0 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-current opacity-70 hover:bg-black/10 hover:opacity-100"
                   @click.stop="remove(item.value)"
                 >
                   {% include 'close.svg' %}
