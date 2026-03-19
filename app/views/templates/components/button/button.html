@@ -45,6 +45,7 @@
       loading: false,
       beforeHTMX: null,
       afterHTMX: null,
+      disabled: false,
       init() {
         this.beforeHTMX = (e) => { 
           if (e.detail && $el.contains(e.detail.elt)) this.loading = true 
@@ -69,8 +70,8 @@
         document.body.removeEventListener('htmx:after-request', this.afterHTMX);
       },
     }"
-    {% if not href %}x-bind:disabled="loading || {{ 'true' if disabled else 'false' }}"{% endif %}
-    x-bind:aria-busy="loading"
+    {% if not href %}:disabled="{{ 'true' if disabled else 'false' }} || loading || disabled"{% endif %}
+    :aria-busy="loading"
   >
     {% if icon and icon_position == 'left' %}
     <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>

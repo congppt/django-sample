@@ -142,6 +142,15 @@ def get_common_context(request):
                     );'''
                 }
             )
+        ],
+        bulk_actions=[
+            TableAction(
+                label='Delete',
+                icon='trash.svg',
+                icon_position=Button.IconPosition.LEFT,
+                variant=Button.Variant.FILLED,
+                disabled=False,
+            )
         ]
     )
     return {

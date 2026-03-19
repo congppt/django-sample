@@ -67,9 +67,8 @@
         </form>
         
         {# Table Actions (Buttons below search/filters) - chỉ hiển thị actions có scope='table' #}
-        {% if actions %}
         <div class="mb-4 flex flex-wrap gap-2 justify-end">
-            {% for action in actions %}
+            {% for action in actions|default([]) %}
             {{
                 button(
                     text=action.label,
@@ -85,8 +84,24 @@
                 )
             }}
             {% endfor %}
+            {% for action in bulk_actions|default([]) %}
+            {% set extra_attributes = dict(action.extra_attributes, **{'@bulk:enabled': "$data.disabled = false;", '@bulk:disabled': "$data.disabled = true;"}) %}
+            {{
+                button(
+                    text=action.label,
+                    icon=action.icon,
+                    icon_position=action.icon_position,
+                    variant=action.variant,
+                    disabled=action.disabled,
+                    loading_text=action.loading_text,
+                    href=action.href,
+                    htmx_event_prefix=action.htmx_event_prefix,
+                    class=action.klass,
+                    extra_attributes=extra_attributes
+                )
+            }}
+            {% endfor %}
         </div>
-        {% endif %}
 
     </div>
     {{ table_body(

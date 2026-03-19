@@ -26,5 +26,5 @@ RUN chmod +x /dist/start.sh
 EXPOSE 8000
 
 # Use entrypoint script
-ENTRYPOINT ["/dist/start.sh"]
+ENTRYPOINT ["/dist/linux-start.sh"]
 
