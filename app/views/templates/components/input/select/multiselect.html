@@ -309,6 +309,7 @@
         placeholder="{{ placeholder|trim }}"
         @click.stop
         @keyup.stop
+        @input="$nextTick(() => reposition())"
         @change.stop
       />
   
