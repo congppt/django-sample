@@ -27,17 +27,14 @@ reload_event='table:reload'
             tick: 0,
             get allChecked() {
               this.tick;
-              console.log(this.tick);
               const checkboxes = this.$root.querySelectorAll('tbody input[name={{ jsonify('selected') }}]');
               if (checkboxes.length === 0) return false;
               return Array.from(checkboxes).every(el => el.checked);
             },
             get anyChecked() {
-              console.log('anyChecked');
               return this.allChecked || this.$root.querySelectorAll('tbody input[name={{ jsonify('selected') }}]:checked').length > 0;
             },
             set allChecked(value) {
-              console.log('allChecked set');
               this.$root.querySelectorAll('tbody input[name={{ jsonify('selected') }}]').forEach(el => {
                 el.checked = value;
               });

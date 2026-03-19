@@ -40,7 +40,7 @@
   <{{ tag }}
     {% if href %}href="{{ href }}"{% else %}type="button"{% endif %}
     class="{{ base_classes }} {{ title_classes }} {{ variant_classes }} {{ disabled_classes }} {{ class }}"
-    {{ extra_attributes | xmlattr }}
+    
     x-data="{ 
       loading: false,
       beforeHTMX: null,
@@ -72,6 +72,7 @@
     }"
     {% if not href %}:disabled="{{ 'true' if disabled else 'false' }} || loading || disabled"{% endif %}
     :aria-busy="loading"
+    {{ extra_attributes | xmlattr }}
   >
     {% if icon and icon_position == 'left' %}
     <span class="{{ icon_wrapper_classes }}" x-show="!loading">{% include icon %}</span>

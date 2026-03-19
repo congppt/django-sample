@@ -35,14 +35,19 @@
                 x-data="{
                     show: false,
                     duration: 3000,
-                    timer: null
+                    timer: null,
+                    selfDestroy(){
+                        setTimeout(() => {
+                            removeToast(message.id);
+                        }, 300);
+                    }
                 }" 
                 x-init="
                     setTimeout(() => { show = true }, 100);
                     if (duration > 0 && message.level <= 35) {
                         timer = setTimeout(() => { 
                             show = false;
-                            setTimeout(() => $root.removeToast(message.id), 300);
+                            selfDestroy();
                         }, duration);
                     }"
                 x-show="show"
@@ -65,7 +70,7 @@
                     variant='transparent',
                     class='text-current',
                     extra_attributes={
-                        '@click': "if (timer) clearTimeout(timer); show = false; setTimeout(() => $root.removeToast(message.id), 300);"
+                        '@click': "if (timer) clearTimeout(timer); show = false; selfDestroy();"
                     })
                 }}
             </div>
