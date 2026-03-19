@@ -143,18 +143,19 @@
         this.open = false;
         this.highlightedIndex = -1;
         this.searchQuery = '';
+        setTimeout(() => this.$refs.input.dispatchEvent(new Event('change', { bubbles: true })), 50);
       },
       clear(e) {
         e.stopPropagation();
         this.selected = null;
         this.searchQuery = '';
         this.highlightedIndex = -1;
+        setTimeout(() => this.$refs.input.dispatchEvent(new Event('change', { bubbles: true })), 50);
       },
       chooseByIndex(index) {
         const option = this.filteredOptions[index];
         if (!option) return;
         this.selected = option.value;
-        this.$refs.input.dispatchEvent(new Event('change'));
         this.closeDropdown();
       },
       onArrowDown() {
@@ -303,7 +304,7 @@
           role="option"
           :id="`${$id('input')}-option-${index}`"
           :aria-selected="option.value === selected"
-          @click="selected = option.value; closeDropdown(); setTimeout(() => $refs.input.dispatchEvent(new Event('change', { bubbles: true })), 50)"
+          @click="selected = option.value; closeDropdown(); $event.stopPropagation();"
           class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
           :class="[
             index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
