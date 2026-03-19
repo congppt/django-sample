@@ -1,4 +1,5 @@
 {% from "templates/components/modal/modal.html" import modal %}
+{% from "templates/components/toast/toast.html" import toast %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -36,6 +37,7 @@
     </div>
   </main>
   {{ modal() }}
+  {{ toast(source=get_messages(request)) }}
 </body>
 {% block post_scripts %}
 {% endblock %}

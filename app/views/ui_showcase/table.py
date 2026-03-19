@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import reverse
@@ -159,6 +160,7 @@ class TableListPartialView(ListView):
     template_name = "ui_showcase/table_partial.html"
 
     def get_context_data(self, **kwargs):
+        messages.success(self.request, 'Message from partial view index: ' + self.request.GET.get('page_index', '0'))
         return get_common_context(self.request)
 
 
