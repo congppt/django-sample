@@ -253,6 +253,7 @@
         placeholder="{{ placeholder|trim }}"
         @click.stop
         @keyup.stop
+        @change.stop
       />
       <span class="flex shrink-0 items-center px-3 gap-0.5">
         <span x-show="isLoading" x-cloak style="display: none;" class="inline-flex text-slate-400 shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin">
@@ -302,7 +303,7 @@
           role="option"
           :id="`${$id('input')}-option-${index}`"
           :aria-selected="option.value === selected"
-          @click="selected = option.value; closeDropdown()"
+          @click="selected = option.value; closeDropdown(); setTimeout(() => $refs.input.dispatchEvent(new Event('change', { bubbles: true })), 50)"
           class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
           :class="[
             index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',

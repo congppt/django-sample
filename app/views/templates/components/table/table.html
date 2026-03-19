@@ -21,7 +21,7 @@
     <div class="px-6">
         {{ header|safe }}
         <form :id="$id('filter')" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" :hx-target="'#' + $id('table')"
-            hx-push-url="false" hx-trigger="change, keyup changed delay:800ms" @submit.prevent>
+            hx-push-url="false" hx-trigger="change, keyup changed delay:600ms" @submit.prevent>
             {# Dynamic filters #}
             {% for filter in filters|default([]) %}
             <div class="filter-wrapper flex-1">
