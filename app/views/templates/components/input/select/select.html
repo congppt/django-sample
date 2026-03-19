@@ -37,6 +37,7 @@
       repositionListener: null,
       searchQuery: '',
       selected: {{ jsonify(value) }},
+      openedSelected: {{ jsonify(value) }},
       options: [],
       isLoading: false,
       hasLoaded: false,
@@ -222,8 +223,8 @@
         }
       },
     }"
-    @keydown.escape.window="closeDropdown()"
-    @click.outside="closeDropdown()"
+    @keydown.escape.window="if (open) closeDropdown()"
+    @click.outside="if (open) closeDropdown()"
   >
     <input type="hidden" name="{{ name }}" :value="selected" x-ref="input" />
     <div

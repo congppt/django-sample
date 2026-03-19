@@ -132,7 +132,13 @@ def get_common_context(request):
                 disabled=False,
                 loading_text='Deleting...',
                 extra_attributes={
-                    '@click': '$dispatch("modal:open", { "url": "https://google.com" });console.log("modal opened")'
+                    '@click': f'''$dispatch("modal:open", 
+                     {{ 
+                        url: "{reverse("ui_showcase_component", kwargs={'component': 'table'})}", 
+                        title: "Modal showcase",
+                        ariaLabel: "Aria label" 
+                    }} 
+                    );'''
                 }
             )
         ]
