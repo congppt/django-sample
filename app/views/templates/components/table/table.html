@@ -15,7 +15,8 @@
     row_actions=[],
     page_index=0,
     page_size=10,
-    total_count=0
+    total_count=0,
+    reload_event='table:reload'
 ) %}
 <div class="bg-white shadow-sm rounded-lg border border-gray-200" x-id="['table', 'filter']" :hx-include="'#' + $id('filter')">
     <div class="px-6">
@@ -24,7 +25,7 @@
             hx-push-url="false" hx-trigger="change, keyup changed delay:600ms" @submit.prevent>
             {# Dynamic filters #}
             {% for filter in filters|default([]) %}
-            <div class="filter-wrapper flex-1">
+            <div class="flex-1">
                 {% if filter.type == 'select' %}
                     {{ select(
                         name=filter.name,
@@ -99,6 +100,7 @@
         page_index=page_index,
         page_size=page_size,
         total_count=total_count,
+        reload_event=reload_event,
     ) }}
 </div>
 {% endmacro %}
