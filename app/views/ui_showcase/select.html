@@ -51,6 +51,37 @@
     </div>
     <div @close-select-modal.window="modalOpen = false"></div>
   </div>
+
+  <div class="space-y-4">
+    <h3 class="text-sm font-semibold text-slate-900">Reload options (custom event)</h3>
+    <p class="text-xs text-slate-600">
+      This select passes <code class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">reload_events</code> so it refetches from
+      <code class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">options_url</code> when
+      <code class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">select-showcase:reload-options</code> fires on
+      <code class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">window</code>. Use the button to trigger that without opening the list.
+    </p>
+    <div class="flex flex-wrap items-end gap-3">
+      {{ select(
+        name='asset_type_reload_demo',
+        options_url=url('ui_showcase_select_options'),
+        label='Kiểu tài sản',
+        placeholder='Chọn kiểu tài sản',
+        reload_events=['select-showcase:reload-options'],
+      ) }}
+      
+    </div>
+    {{
+      button(
+        text='Reload options',
+        icon='refresh.svg',
+        icon_position='left',
+        variant='outlined',
+        extra_attributes={
+          '@click': "$dispatch('select-showcase:reload-options')",
+        },
+      )
+    }}
+  </div>
 </section>
 
 <section class="py-16 space-y-12 border-t border-slate-200">

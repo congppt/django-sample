@@ -1,3 +1,4 @@
+import random
 import time
 
 from django.http import Http404, HttpResponse, JsonResponse
@@ -16,7 +17,9 @@ ASSET_TYPE_OPTIONS = [
 ]
 
 def select_options_json(request):
-    return JsonResponse(ASSET_TYPE_OPTIONS, safe=False)
+    payload = list(ASSET_TYPE_OPTIONS)
+    random.shuffle(payload)
+    return JsonResponse(payload, safe=False)
 
 
 class UIShowcasePageView(TemplateView):
