@@ -29,7 +29,7 @@
   {% set value = [value] if value else [] %}
   {% endif %}
   <div
-    class="h-full"
+    class="h-full {{ class }}"
     x-data="{
       optionsUrl: '{{ options_url }}',
       reloadEvents: {{ jsonify(reload_events or []) }},
@@ -397,7 +397,7 @@
               </template>
             </div>
           {% else %}
-            <div class="flex-1 truncate text-slate-900">
+            <div class="flex-1 max-w-full truncate text-slate-900">
               <span x-text="selectedLabels[0].label"></span>
             </div>
           {% endif %}

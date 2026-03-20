@@ -6,6 +6,7 @@ from .ui_showcase import (
     select_options_json,
     dependency_max_options_json,
 )
+from .dropzone_demo import dropzone_upload_demo
 from .table import TableListView, TableListPartialView, table_id_options_json
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path('table-id-options', table_id_options_json, name='ui_showcase_table_id_options'),
     path('table/', TableListView.as_view(), name='ui_showcase_table'),
     path('table/partial/', TableListPartialView.as_view(), name='ui_showcase_table_partial'),
+    path('dropzone-upload-demo/', dropzone_upload_demo, name='ui_showcase_dropzone_upload_demo'),
 ]

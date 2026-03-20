@@ -37,7 +37,7 @@ class FilterParam(BaseModel):
     tooltip_content: str | None = None
     tooltip_axis: str = 'vertical'
     client_validate: str | None = None
-    extra_attributes: dict = {},
+    extra_attributes: dict = {}
 
 class SortDirection(StrEnum):
     ASC = "asc"
