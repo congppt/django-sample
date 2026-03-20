@@ -4,7 +4,7 @@
 {% for message in source %}
 {{ messages.append({'message': message.message,'level': message.level }) }}
 {% endfor %}
-<div id="toast-manager" class="fixed top-16 right-0 p-4">
+<div id="toast-manager" class="fixed top-16 right-0 p-4" style="z-index: 9999;">
     <div id="toast-container"
      class="flex flex-col gap-2"
      x-data="{

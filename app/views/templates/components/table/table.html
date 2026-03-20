@@ -21,8 +21,16 @@
 <div class="bg-white shadow-sm rounded-lg border border-gray-200" x-id="['table', 'filter']" :hx-include="'#' + $id('filter')">
     <div class="px-6">
         {{ header|safe }}
-        <form :id="$id('filter')" class="my-2 flex flex-wrap gap-4" hx-get="{{ partial_url }}" :hx-target="'#' + $id('table')"
-            hx-push-url="false" hx-trigger="{% if reload_event %}{{ reload_event }} from:body, {% endif %}change, keyup changed delay:600ms" @submit.prevent>
+        <form 
+            :id="$id('filter')" 
+            class="my-2 flex flex-wrap gap-4" 
+            hx-get="{{ partial_url }}" 
+            :hx-target="'#' + $id('table')"
+            hx-include="[name='page_size'], [name='sort'], [name='sort_direction']"
+            hx-push-url="false"
+            hx-trigger="{% if reload_event %}{{ reload_event }} from:body, {% endif %}change, keyup changed delay:600ms"
+            @submit.prevent
+        >
             {# Dynamic filters #}
             {% for filter in filters|default([]) %}
             <div class="flex-1">
@@ -60,10 +68,6 @@
                 {% endif %}
             </div>
             {% endfor %}
-            
-            {# Persist paging/sort in form #}
-            <input type="hidden" name="sort" value="{{ sort }}">
-            <input type="hidden" name="sort_direction" value="{{ sort_direction }}">
         </form>
         
         {# Table Actions (Buttons below search/filters) - chỉ hiển thị actions có scope='table' #}

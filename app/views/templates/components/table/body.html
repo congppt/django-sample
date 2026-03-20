@@ -42,11 +42,11 @@ total_count=0
           
       >
       <thead
-        class="sticky top-0 z-0 h-12 text-sm tracking-wider cursor-pointer break-words"
+        class="sticky top-0 z-5 h-12 text-sm tracking-wider cursor-pointer break-words"
         style="background-color: #F1F3F9; color: #1F2937;">
         <tr>
           {% if bulk_actions %}
-          <th class="py-3 px-6">
+          <th class="py-3 px-3">
             <input type="checkbox" name="selected" value="*" x-model="allChecked">
           </th>
           {% endif %}
@@ -63,7 +63,7 @@ total_count=0
               class='font-bold! text-sm',
               extra_attributes={
                 'hx-get': partial_url,
-                'hx-include': 'inherit, [name="page_size"], [name="page_index"]',
+                'hx-include': 'inherit, [name="page_size"]',
                 ':hx-target': "'#' + $id('table')",
                 'hx-push-url': 'false',
                 'hx-vals': jsonify(
@@ -75,6 +75,10 @@ total_count=0
                 ),
               }
             ) }}
+            {% if sort == column.name %}
+            <input type="hidden" name="sort" value="{{ column.name }}" :form="$id('filter')">
+            <input type="hidden" name="sort_direction" :form="$id('filter')" value='{{ sort_direction }}'>
+            {% endif %}
             {% else %}
             <span>{{ column.label or column.name }}</span>
             {% endif %}
@@ -90,10 +94,11 @@ total_count=0
       <tbody class="bg-white divide-y divide-gray-200" @change="tick++">
         {% if rows %}
         {% for row in rows %}
+        {% set row_bg_color = 'bg-white' if loop.index0 % 2 == 0 else 'bg-gray-100' %}
         <tr
-          class="transition-colors duration-150 hover:bg-gray-200 group divide-x divide-gray-200 {% if loop.index0 % 2 == 0 %}bg-white{% else %}bg-gray-100{% endif %}">
+          class="transition-colors duration-150 group  divide-x divide-gray-200 {{ row_bg_color }}">
           {% if bulk_actions %}
-          <td class="px-6 py-4 text-center">
+          <td class="text-center group-has-hover:bg-gray-200">
             <input type="checkbox" name="selected" value="{{ row.id }}">
           </td>
           {% endif %}
@@ -101,7 +106,7 @@ total_count=0
           {% for column in columns %}
           {% set need_tooltip= get_attribute(column,'need_tooltip') %}
           {% set wrap_class = 'whitespace-nowrap' if need_tooltip is sameas False else 'break-words min-w-50' %}
-          <td class="px-6 py-4 {{ wrap_class }} text-sm text-gray-900 text-{{ column.align or 'center' }}">
+          <td class="px-4 py-4 {{ wrap_class }} text-sm text-gray-900 text-{{ column.align or 'center' }} group-has-hover:bg-gray-200">
             {% set value = get_attribute(row, column.name) %}
             {% set formatter = get_attribute(column, 'format') %}
             {% set formatted_value = formatter(value) %}
@@ -116,9 +121,23 @@ total_count=0
           {% endfor %}
 
           {% if row_actions %}
-          <td class="px-6 py-4 sticky right-0 {% if loop.index0 % 2 == 0 %}bg-white{% else %}bg-gray-100{% endif %}">
+          <td class="px-6 py-4 sticky right-0 {{ row_bg_color }} group-has-hover:bg-gray-200">
             <div class="flex items-center justify-center gap-2">
               {% for action in row_actions %}
+              {{
+                button(
+                  text=action.label,
+                  icon=action.icon,
+                  icon_position=action.icon_position,
+                  variant=action.variant,
+                  disabled=action.disabled,
+                  loading_text=action.loading_text,
+                  href=action.href,
+                  htmx_event_prefix=action.htmx_event_prefix,
+                  class=action.klass,
+                  extra_attributes=action.extra_attributes
+                )
+              }}
               {% endfor %}
             </div>
           </td>
@@ -144,16 +163,11 @@ total_count=0
         <span class="font-medium">{{ total_count }}</span> kết quả
       </p>
       <div>
-        {% set paging_params = {
-          'sort': sort,
-          'sort_direction': sort_direction,
-        } %}
         <select 
           name="page_size" 
-          form="$id('filter')"
+          :form="$id('filter')"
           hx-get="{{ partial_url }}"
           hx-include="inherit",
-          hx-vals='{{ jsonify(paging_params) }}',
           :hx-target="'#' + $id('table')"
           hx-push-url="false"
           class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
@@ -175,7 +189,7 @@ total_count=0
             disabled=page_index <= 0,
             extra_attributes={
               'hx-get': partial_url,
-              'hx-include': 'inherit, [name="page_size"], [name="sort"], [name="sort_direction"]',
+              'hx-include': 'inherit, [name="page_size"]',
               ':hx-target': "'#' + $id('table')",
               'hx-push-url': 'false',
               'hx-vals': jsonify(
@@ -195,7 +209,7 @@ total_count=0
               class='rounded-none',
               extra_attributes={
                 'hx-get': partial_url,
-                'hx-include': "inherit, [name='page_size'], [name='sort'], [name='sort_direction']",
+                'hx-include': "inherit, [name='page_size']",
                 ':hx-target': "'#' + $id('table')",
                 'hx-push-url': 'false',
                 'hx-vals': jsonify(
@@ -217,7 +231,7 @@ total_count=0
             disabled=page_index >= total_pages|int - 1,
             extra_attributes={
               'hx-get': partial_url,
-              'hx-include': "inherit, [name='page_size'], [name='sort'], [name='sort_direction']",
+              'hx-include': "inherit, [name='page_size']",
               ':hx-target': "'#' + $id('table')",
               'hx-push-url': 'false',
               'hx-vals': jsonify(

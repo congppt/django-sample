@@ -8,7 +8,7 @@
   class="contents"
 >
   <template x-for="(m, idx) in modals" :key="m.id">
-    <div class="fixed inset-0" x-show="m.open" x-transition.opacity>
+    <div class="fixed inset-0 z-499" x-show="m.open" x-transition.opacity>
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/50 p-4"
         :style="`z-index: ${500 + idx}`"

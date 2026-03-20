@@ -142,6 +142,18 @@ def get_common_context(request):
                 }
             )
         ],
+        row_actions=[
+            TableAction(
+                label='Delete',
+                icon='trash.svg',
+                icon_position=Button.IconPosition.LEFT,
+                variant=Button.Variant.FILLED,
+                disabled=False,
+                extra_attributes={
+                    'hx-delete': f'{reverse("ui_showcase_component", kwargs={"component": "table"})}',
+                }
+            )
+        ],
         bulk_actions=[
             TableAction(
                 label='Delete',
