@@ -16,28 +16,30 @@ total_count=0
     :id="$id('table')"
     hx-ext="alpine-morph"
     hx-swap="morph"
+    x-data="{
+      tick: 0,
+      get allChecked() {
+        this.tick;
+        const checkboxes = $el.querySelectorAll('tbody input[name={{ jsonify('selected') }}]');
+        if (checkboxes.length === 0) return false;
+        return Array.from(checkboxes).every(el => el.checked);
+      },
+      get anyChecked() {
+        return this.allChecked || $el.querySelectorAll('tbody input[name={{ jsonify('selected') }}]:checked').length > 0;
+      },
+      set allChecked(value) {
+        $el.querySelectorAll('tbody input[name={{ jsonify('selected') }}]').forEach(el => {
+          el.checked = value;
+        });
+        $data.tick++;
+      }
+    }"
+    x-init="$watch('anyChecked', (value) => $dispatch('bulk-actions', value)); $dispatch('bulk-actions', anyChecked);"
+    @htmx:after-swap.document="if ($event.target.id === $id('table')) { $data.allChecked = false; $data.tick = 0;}"
 >
   <div class="overflow-auto max-h-130">
     <table class="w-full"
-          x-data="{
-            tick: 0,
-            get allChecked() {
-              this.tick;
-              const checkboxes = this.$root.querySelectorAll('tbody input[name={{ jsonify('selected') }}]');
-              if (checkboxes.length === 0) return false;
-              return Array.from(checkboxes).every(el => el.checked);
-            },
-            get anyChecked() {
-              return this.allChecked || this.$root.querySelectorAll('tbody input[name={{ jsonify('selected') }}]:checked').length > 0;
-            },
-            set allChecked(value) {
-              this.$root.querySelectorAll('tbody input[name={{ jsonify('selected') }}]').forEach(el => {
-                el.checked = value;
-              });
-              $data.tick++;
-            }
-          }"
-          @htmx:after-swap.document="if ($event.target.id === $id('table')) { $data.allChecked = false; $data.tick = 0;}"
+          
       >
       <thead
         class="sticky top-0 z-0 h-12 text-sm tracking-wider cursor-pointer break-words"

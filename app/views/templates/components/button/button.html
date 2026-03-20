@@ -28,11 +28,7 @@
 {% else %}
 {% set variant_classes = 'border border-gray-400 bg-white text-red-700 hover:bg-gray-100 hover:text-red-800 active:bg-gray-100 active:text-red-800' %}
 {% endif %}
-{% if disabled %}
-{% set disabled_classes = 'disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-transparent' %}
-{% else %}
-{% set disabled_classes = '' %}
-{% endif %}
+{% set disabled_classes = 'disabled:bg-gray-200! disabled:text-gray-400! disabled:cursor-not-allowed! disabled:border-transparent!' %}
 {% set icon_loading = 'spinner.svg' %}
 {% set icon_wrapper_classes = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none' %}
 {% set icon_loading_classes = 'shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin' %}
