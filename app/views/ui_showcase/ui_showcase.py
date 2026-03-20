@@ -19,6 +19,22 @@ ASSET_TYPE_OPTIONS = [
 def select_options_json(request):
     payload = list(ASSET_TYPE_OPTIONS)
     random.shuffle(payload)
+    max_param = request.GET.get("max")
+    if max_param is not None:
+        try:
+            max_value = int(max_param)
+        except (TypeError, ValueError):
+            max_value = None
+
+        if max_value is not None:
+            payload = payload[:max_value]
+
+    return JsonResponse(payload, safe=False)
+
+
+def dependency_max_options_json(request):
+    # Simple numeric select options for the showcase (3..5).
+    payload = [{"value": n, "label": str(n)} for n in range(3, 6)]
     return JsonResponse(payload, safe=False)
 
 

@@ -29,6 +29,8 @@
     x-data="{
       optionsUrl: '{{ options_url }}',
       reloadEvents: {{ jsonify(reload_events or []) }},
+      // Params to include when (re)loading options (fed via reload events).
+      params: {},
       input: null,
       open: false,
       placement: 'bottom',
@@ -43,6 +45,24 @@
       hasLoaded: false,
       highlightedIndex: -1,
       reloadListener: null,
+      fetchRequestId: 0,
+      resetSelectedAfterLoad: false,
+      buildOptionsUrl(params = {}) {
+        try {
+          const url = new URL(this.optionsUrl, window.location.origin);
+          Object.entries(params || {}).forEach(([key, value]) => {
+            if (value === null || value === undefined || value === '') {
+              url.searchParams.delete(key);
+              return;
+            }
+            url.searchParams.set(key, value);
+          });
+          return url.toString();
+        } catch (e) {
+          // Fallback: if URL parsing fails, use optionsUrl as-is.
+          return this.optionsUrl;
+        }
+      },
       get selectedLabel() {
         if (this.selected === null) return null;
         const match = this.options.find(option => option.value === this.selected);
@@ -57,10 +77,16 @@
           return label.includes(normalizedQuery);
         });
       },
-      fetchOptions(force = false) {
-        if (this.isLoading || (this.hasLoaded && !force)) return;
+      fetchOptions(force = false, paramsOverride = null) {
+        if (this.isLoading && !force) return;
+        if (this.hasLoaded && !force) return;
         this.isLoading = true;
-        fetch(this.optionsUrl, {
+        const requestId = ++this.fetchRequestId;
+        const shouldResetSelected = this.resetSelectedAfterLoad;
+        this.resetSelectedAfterLoad = false;
+        const params = paramsOverride !== null ? paramsOverride : this.params;
+        const url = this.buildOptionsUrl(params);
+        fetch(url, {
           headers: {
             'Accept': 'application/json',
           },
@@ -70,17 +96,23 @@
             return response.json();
           })
           .then(data => {
+            if (requestId !== this.fetchRequestId) return; // Ignore stale responses
             this.options = Array.isArray(data) ? data : [];
             this.hasLoaded = true;
+            if (shouldResetSelected) this.selected = null;
             if (this.open) this.$nextTick(() => this.reposition());
           })
           .catch(() => {
+            if (requestId !== this.fetchRequestId) return; // Ignore stale responses
             this.options = [];
             this.hasLoaded = true;
+            if (shouldResetSelected) this.selected = null;
             if (this.open) this.$nextTick(() => this.reposition());
           })
           .finally(() => {
-            this.isLoading = false;
+            if (requestId === this.fetchRequestId) {
+              this.isLoading = false;
+            }
           });
       },
       reposition() {
@@ -144,14 +176,18 @@
         this.open = false;
         this.highlightedIndex = -1;
         this.searchQuery = '';
-        setTimeout(() => this.$refs.input.dispatchEvent(new Event('change', { bubbles: true })), 50);
+        setTimeout(() => {
+          this.$refs.input.dispatchEvent(new Event('change', { bubbles: true }))
+        }, 50);
       },
       clear(e) {
         e.stopPropagation();
         this.selected = null;
         this.searchQuery = '';
         this.highlightedIndex = -1;
-        setTimeout(() => this.$refs.input.dispatchEvent(new Event('change', { bubbles: true })), 50);
+        setTimeout(() => {
+          this.$refs.input.dispatchEvent(new Event('change', { bubbles: true }))
+        }, 50);
       },
       chooseByIndex(index) {
         const option = this.filteredOptions[index];
@@ -202,7 +238,19 @@
         window.addEventListener('resize', this.repositionListener);
         window.addEventListener('scroll', this.repositionListener, true);
         if (Array.isArray(this.reloadEvents) && this.reloadEvents.length) {
-          this.reloadListener = () => {
+          this.reloadListener = (event) => {
+            // Flatter payload form (Alpine `$dispatch`):
+            //   $dispatch(eventName, { <paramName>: <paramValue> })
+            // Merge into existing params so multiple dependency inputs can patch different keys.
+            const payload = event?.detail ?? {};
+            if (payload && typeof payload === 'object') {
+              this.params = { ...(this.params || {}), ...payload };
+            }
+
+            // Clear selection after the next successful/failed fetch is applied.
+            this.resetSelectedAfterLoad = true;
+            this.searchQuery = '';
+            this.highlightedIndex = -1;
             this.hasLoaded = false;
             this.fetchOptions(true);
           };
@@ -226,7 +274,13 @@
     @keydown.escape.window="if (open) closeDropdown()"
     @click.outside="if (open) closeDropdown()"
   >
-    <input type="hidden" name="{{ name }}" :value="selected" x-ref="input" />
+    <input
+      type="hidden"
+      name="{{ name }}"
+      :value="selected"
+      x-ref="input"
+      {{ extra_attributes | xmlattr }}
+    />
     <div
       x-ref="trigger"
       role="combobox"

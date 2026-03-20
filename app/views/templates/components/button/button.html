@@ -52,10 +52,7 @@
           {% if htmx_event_prefix is not none and htmx_event_prefix|trim %}
           const status = e.detail.xhr.status;
           const outcome = status >= 200 && status < 300 ? 'success' : 'failed';
-          this.$dispatch('{{ htmx_event_prefix }}:' + outcome, { 
-            bubbles: true, 
-            detail: { status, xhr: e.detail.xhr } 
-          });
+          this.$dispatch('{{ htmx_event_prefix }}:' + outcome, { status, xhr: e.detail.xhr });
           {% endif %}
         };
         document.body.addEventListener('htmx:before-request', this.beforeHTMX);

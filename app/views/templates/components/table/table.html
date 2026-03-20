@@ -89,7 +89,7 @@
             }}
             {% endfor %}
             {% for action in bulk_actions|default([]) %}
-            {% set extra_attributes = dict(action.extra_attributes, **{'@bulk-actions.window': "if ($event.target.id === $id('table')) { disabled = !$event.detail;} console.log(loading || disabled);"}) %}
+            {% set extra_attributes = dict(action.extra_attributes, **{'@bulk-actions.window': "if ($event.target.id === $id('table')) { disabled = !$event.detail;}"}) %}
             {{
                 button(
                     text=action.label,
