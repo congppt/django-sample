@@ -2,6 +2,7 @@
 {% macro select(
     name,
     options_url,
+    multiple=false,
     label='',
     placeholder='Select...',
     hint=none,
@@ -24,6 +25,9 @@
     tooltip_content=tooltip_content,
     tooltip_axis=tooltip_axis,
   ) %}
+  {% if value is not sequence or value is string %}
+  {% set value = [value] if value else [] %}
+  {% endif %}
   <div
     class="h-full"
     x-data="{
@@ -31,15 +35,15 @@
       reloadEvents: {{ jsonify(reload_events or []) }},
       // Params to include when (re)loading options (fed via reload events).
       params: {},
-      input: null,
+      multiple: {{ jsonify(multiple) }},
       open: false,
       placement: 'bottom',
       coords: { top: 0, left: 0, width: 0, maxHeight: 240 },
       margin: 12,
       repositionListener: null,
       searchQuery: '',
-      selected: {{ jsonify(value) }},
-      openedSelected: {{ jsonify(value) }},
+      initialSelected: {{ jsonify(value) }},
+      selected: [],
       options: [],
       isLoading: false,
       hasLoaded: false,
@@ -51,10 +55,16 @@
         try {
           const url = new URL(this.optionsUrl, window.location.origin);
           Object.entries(params || {}).forEach(([key, value]) => {
-            if (value === null || value === undefined || value === '') {
-              url.searchParams.delete(key);
+            if (value === null || value === undefined || value === '') return;
+
+            if (Array.isArray(value)) {
+              value.forEach(v => {
+                if (v === null || v === undefined || v === '') return;
+                url.searchParams.append(key, v);
+              });
               return;
             }
+
             url.searchParams.set(key, value);
           });
           return url.toString();
@@ -63,10 +73,38 @@
           return this.optionsUrl;
         }
       },
-      get selectedLabel() {
-        if (this.selected === null) return null;
-        const match = this.options.find(option => option.value === this.selected);
-        return match ? match.label : null;
+      normalizeSelected() {
+        if (Array.isArray(this.selected)) {
+          if (!this.multiple) {
+            // Single-select must keep only one value.
+            this.selected = this.selected.length ? [this.selected[0]] : [];
+          }
+          return;
+        }
+        if (this.selected === null || this.selected === undefined || this.selected === '') {
+          this.selected = [];
+          return;
+        }
+        this.selected = [this.selected];
+      },
+      isSelected(val) {
+        this.normalizeSelected();
+        return this.selected.includes(val);
+      },
+      optionFor(val) {
+        return this.options.find(option => option.value === val);
+      },
+      labelFor(val) {
+        const match = this.optionFor(val);
+        return match ? match.label : String(val);
+      },
+      klassFor(val) {
+        const match = this.optionFor(val);
+        return match?.klass || '';
+      },
+      get selectedLabels() {
+        this.normalizeSelected();
+        return this.selected.map(val => ({ value: val, label: this.labelFor(val), klass: this.klassFor(val) }));
       },
       get filteredOptions() {
         const q = (this.searchQuery || '').trim();
@@ -99,14 +137,14 @@
             if (requestId !== this.fetchRequestId) return; // Ignore stale responses
             this.options = Array.isArray(data) ? data : [];
             this.hasLoaded = true;
-            if (shouldResetSelected) this.selected = null;
+            if (shouldResetSelected) this.selected = [];
             if (this.open) this.$nextTick(() => this.reposition());
           })
           .catch(() => {
             if (requestId !== this.fetchRequestId) return; // Ignore stale responses
             this.options = [];
             this.hasLoaded = true;
-            if (shouldResetSelected) this.selected = null;
+            if (shouldResetSelected) this.selected = [];
             if (this.open) this.$nextTick(() => this.reposition());
           })
           .finally(() => {
@@ -176,24 +214,51 @@
         this.open = false;
         this.highlightedIndex = -1;
         this.searchQuery = '';
-        setTimeout(() => {
-          this.$refs.input.dispatchEvent(new Event('change', { bubbles: true }))
-        }, 50);
       },
       clear(e) {
         e.stopPropagation();
-        this.selected = null;
+        this.selected = [];
         this.searchQuery = '';
         this.highlightedIndex = -1;
-        setTimeout(() => {
-          this.$refs.input.dispatchEvent(new Event('change', { bubbles: true }))
-        }, 50);
+        this.notifyInputChanged();
+      },
+      toggle(val) {
+        this.normalizeSelected();
+        if (this.multiple) {
+          const idx = this.selected.indexOf(val);
+          if (idx >= 0) {
+            this.selected.splice(idx, 1);
+          } else {
+            this.selected.push(val);
+          }
+          this.notifyInputChanged();
+          return;
+        }
+
+        // Single-select: replace selection and close dropdown.
+        const idx = this.selected.indexOf(val);
+        if (idx >= 0) {
+          this.closeDropdown();
+          return;
+        }
+        this.selected = [val];
+        this.notifyInputChanged();
+        this.closeDropdown();
+      },
+      remove(val) {
+        this.normalizeSelected();
+        const idx = this.selected.indexOf(val);
+        if (idx >= 0) this.selected.splice(idx, 1);
+        this.notifyInputChanged();
+      },
+      notifyInputChanged() {
+        // Notify observers that the selected values changed.
+        setTimeout(() => this.$refs.input?.dispatchEvent(new Event('change', { bubbles: true })), 0);
       },
       chooseByIndex(index) {
         const option = this.filteredOptions[index];
         if (!option) return;
-        this.selected = option.value;
-        this.closeDropdown();
+        this.toggle(option.value);
       },
       onArrowDown() {
         if (!this.open) {
@@ -232,6 +297,8 @@
       },
       init() {
         this.fetchOptions();
+        this.selected = this.initialSelected;
+        this.normalizeSelected();
         this.repositionListener = () => {
           if (this.open) this.reposition();
         };
@@ -247,11 +314,11 @@
               this.params = { ...(this.params || {}), ...payload };
             }
 
+            this.hasLoaded = false;
             // Clear selection after the next successful/failed fetch is applied.
             this.resetSelectedAfterLoad = true;
             this.searchQuery = '';
             this.highlightedIndex = -1;
-            this.hasLoaded = false;
             this.fetchOptions(true);
           };
           this.reloadEvents.forEach(eventName => {
@@ -271,16 +338,21 @@
         }
       },
     }"
-    @keydown.escape.window="if (open) closeDropdown()"
-    @click.outside="if (open) closeDropdown()"
+    @keydown.escape.window="closeDropdown()"
+    @click.outside="closeDropdown()"
   >
-    <input
-      type="hidden"
+    <select
+      {% if multiple %}multiple{% endif %}
       name="{{ name }}"
-      :value="selected"
       x-ref="input"
+      class="hidden"
       {{ extra_attributes | xmlattr }}
-    />
+    >
+      <template x-for="val in selected" :key="val">
+        <option :value="val" :selected="true" x-text="val"></option>
+      </template>
+    </select>
+
     <div
       x-ref="trigger"
       role="combobox"
@@ -296,10 +368,43 @@
       @keydown.enter.prevent="onEnter()"
       class="h-full flex items-center transition"
     >
-      <div x-show="!open" class="flex-1 truncate px-2" :class="selectedLabel ? 'text-slate-900' : 'text-slate-500'">
-        <template x-if="selectedLabel !== null"><span x-text="selectedLabel"></span></template>
-        <template x-if="selectedLabel === null"><span>{{ placeholder|trim }}</span></template>
+    <div x-show="!open" class="flex px-2 flex-1 items-center gap-1.5 min-w-0">
+        <template x-if="selectedLabels.length === 0">
+          <span class="truncate text-slate-500">{{ placeholder|trim }}</span>
+        </template>
+      
+        <template x-if="selectedLabels.length > 0">
+          {% if multiple %}
+            <div class="flex flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-auto">
+              <template x-for="item in selectedLabels.slice(0, 3)" :key="`chip-${item.value}`">
+                <span
+                  class="inline-flex flex-shrink max-w-80 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
+                  :class="item.klass || 'bg-slate-100 text-slate-800'"
+                >
+                  <span class="truncate" x-text="item.label"></span>
+                  <button
+                    type="button"
+                    class="flex-shrink-0 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-current opacity-70 hover:bg-black/10 hover:opacity-100"
+                    @click.stop="remove(item.value)"
+                  >
+                    {% include 'close.svg' %}
+                  </button>
+                </span>
+              </template>
+        
+              <template x-if="selectedLabels.length > 3">
+                <span class="flex-shrink-0 text-xs text-slate-500" x-text="`+${selectedLabels.length - 3}`"></span>
+              </template>
+            </div>
+          {% else %}
+            <div class="flex-1 truncate text-slate-900">
+              <span x-text="selectedLabels[0].label"></span>
+            </div>
+          {% endif %}
+          </div>
+        </template>
       </div>
+  
       <input
         x-ref="searchInput"
         x-show="open"
@@ -312,13 +417,14 @@
         @input="$nextTick(() => reposition())"
         @change.stop
       />
+  
       <span class="flex shrink-0 items-center px-3 gap-0.5">
         <span x-show="isLoading" x-cloak style="display: none;" class="inline-flex text-slate-400 shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin">
           {% include 'spinner.svg' %}
         </span>
         <button
           type="button"
-          x-show="selected !== null"
+          x-show="selected.length > 0"
           x-cloak
           style="display: none;"
           @click="clear($event)"
@@ -337,19 +443,19 @@
         </span>
       </span>
     </div>
-    <template x-teleport="body">
-      <div
-        x-show="open"
-        x-ref="panel"
-        x-cloak
-        x-transition
-        :id="$id('input') + '-listbox'"
-        role="listbox"
-        :aria-labelledby="$id('input')"
-        class="fixed z-50 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-        :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
-        :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
-      >
+  
+    <div
+      x-show="open"
+      x-ref="panel"
+      x-cloak
+      x-transition
+      :id="$id('input') + '-listbox'"
+      role="listbox"
+      :aria-labelledby="$id('input')"
+      class="fixed z-50 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+      :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
+      :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
+    >
       <template x-if="!isLoading && filteredOptions.length === 0">
         <div class="px-3 py-2 text-xs text-slate-500">
           Không tìm thấy kết quả phù hợp.
@@ -359,24 +465,22 @@
         <div
           role="option"
           :id="`${$id('input')}-option-${index}`"
-          :aria-selected="option.value === selected"
-          @click="selected = option.value; closeDropdown(); $event.stopPropagation();"
+          :aria-selected="isSelected(option.value)"
+          @click="toggle(option.value);"
           class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
           :class="[
             index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-            option.value === selected ? 'font-medium' : ''
+            isSelected(option.value) ? 'font-medium' : ''
           ]"
         >
           <span class="mr-2 break-words whitespace-normal" x-text="option.label"></span>
-          <span x-show="option.value === selected" x-cloak class="shrink-0 text-red-600">
+          <span x-show="isSelected(option.value)" x-cloak class="shrink-0 text-red-600">
             ✓
           </span>
         </div>
       </template>
-      </div>
-    </template>
+    </div>
   </div>
   {% endcall %}
   {% endmacro %}
-  
   

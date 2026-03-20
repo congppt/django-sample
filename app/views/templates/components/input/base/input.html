@@ -69,7 +69,7 @@
     name="{{ name }}" 
     :value="value"
     x-ref="input"
-    
+    {{ extra_attributes | xmlattr }}
   />
   <div class="relative h-full flex items-center">
     <input
@@ -86,7 +86,6 @@
       :disabled="disabled"
       class="flex-1 px-2 focus:outline-none"
       :class="disabled ? 'cursor-not-allowed' : ''"
-      {{ extra_attributes | xmlattr }}
     />
 
     {% if type == 'password' %}

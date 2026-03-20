@@ -34,10 +34,11 @@
             {# Dynamic filters #}
             {% for filter in filters|default([]) %}
             <div class="flex-1">
-                {% if filter.type == 'select' %}
+                {% if filter.type == 'select' or filter.type == 'multiselect' %}
                     {{ select(
                         name=filter.name,
                         label=filter.label,
+                        multiple=filter.type == 'multiselect',
                         options_url=filter.extra_attributes.get('options_url'),
                         value=filter.value,
                         disabled=filter.disabled,
@@ -48,6 +49,7 @@
                         tooltip_content=filter.tooltip_content,
                         tooltip_axis=filter.tooltip_axis,
                         reload_events=filter.extra_attributes.get('reload_events'),
+                        extra_attributes=filter.extra_attributes
                     ) }}
                 {% else %}
                     
@@ -63,7 +65,8 @@
                         class=filter.klass,
                         tooltip_content=filter.tooltip_content,
                         tooltip_axis=filter.tooltip_axis,
-                        validate=filter.client_validate
+                        validate=filter.client_validate,
+                        extra_attributes=filter.extra_attributes
                     ) }}
                 {% endif %}
             </div>
