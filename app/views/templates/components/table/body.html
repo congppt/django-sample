@@ -10,16 +10,12 @@ bulk_actions=[],
 row_actions=[],
 page_index=0,
 page_size=10,
-total_count=0,
-reload_event='table:reload'
+total_count=0
 ) %}
 <div 
     :id="$id('table')"
     hx-ext="alpine-morph"
     hx-swap="morph"
-    {% if reload_event %}
-    hx-trigger="{{ reload_event }} from:body"
-    {% endif %}
 >
   <div class="overflow-auto max-h-130">
     <table class="w-full"

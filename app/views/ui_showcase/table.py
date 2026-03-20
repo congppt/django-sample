@@ -58,6 +58,7 @@ def get_common_context(request):
 
     table_context = TableContext(
         request=request,
+        reload_event='table:reload',
         title='Table showcase',
         columns=COLUMNS,
         filters=[
@@ -113,16 +114,14 @@ def get_common_context(request):
                 href="https://google.com",
             ),
             TableAction(
-                label='Edit',
-                icon='edit.svg',
+                label='Refresh',
+                icon='refresh.svg',
                 icon_position=Button.IconPosition.LEFT,
                 variant=Button.Variant.OUTLINED,
                 disabled=False,
-                loading_text='Editing...',
+                loading_text='Refreshing...',
                 extra_attributes={
-                    'hx-get': reverse('ui_showcase_component', kwargs={'component': 'select'}),
-                    'hx-target': '#ui-showcase-content',
-                    'hx-swap': 'innerHTML',
+                    '@click': '$dispatch("table:reload")',
                 },
             ),
             TableAction(

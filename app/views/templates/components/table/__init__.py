@@ -123,6 +123,7 @@ class TableContext(BaseModel):
     actions: list[TableAction] = []
     row_actions: list[TableAction] = []
     bulk_actions: list[TableAction] = []
+    reload_event: str | None = None
 
     def __create_data_context(self, data_set: QuerySet | list[Any], params: PaginationParam, transformer = None):
         if isinstance(data_set, QuerySet):
