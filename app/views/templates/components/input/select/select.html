@@ -387,7 +387,7 @@
       
         <template x-if="selectedLabels.length > 0">
           {% if multiple %}
-            <div class="flex flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-auto">
+            <div class="flex flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-auto" style="scrollbar-width: thin;">
               <template x-for="item in selectedLabels.slice(0, 3)" :key="`chip-${item.value}`">
                 <span
                   class="inline-flex flex-shrink max-w-80 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"

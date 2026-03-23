@@ -1,7 +1,7 @@
 /* Select popup & options styling is officially supported */
 /* https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Customizable_select */
 body {
-    font-family: 'Nutino', sans-serif;
+    font-family: 'Nunito', sans-serif;
 }
 
 [x-cloak] {

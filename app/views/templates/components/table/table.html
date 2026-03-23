@@ -2,6 +2,8 @@
 {% from 'templates/components/table/body.html' import table_body %}
 {% from 'templates/components/input/base/input.html' import input %}
 {% from 'templates/components/input/select/select.html' import select %}
+{% from 'templates/components/input/datetimepicker/datetimepicker.html' import datetimepicker %}
+{% from 'templates/components/input/datetimepicker/datepicker.html' import datepicker %}
 {% macro table(
     header='',
     filters=[],
@@ -51,8 +53,23 @@
                         reload_events=filter.extra_attributes.get('reload_events'),
                         extra_attributes=filter.extra_attributes
                     ) }}
+                {% elif filter.type == 'datetime' or filter.type == 'date' %}
+                    {{ datetimepicker(
+                        name=filter.name,
+                        label=filter.label,
+                        variant=filter.type,
+                        value=filter.value,
+                        disabled=filter.disabled,
+                        hint=filter.hint,
+                        placeholder=filter.placeholder,
+                        required=filter.required,
+                        class=filter.klass,
+                        tooltip_content=filter.tooltip_content,
+                        tooltip_axis=filter.tooltip_axis,
+                        reload_events=filter.extra_attributes.get('reload_events'),
+                        extra_attributes=filter.extra_attributes
+                    ) }}
                 {% else %}
-                    
                     {{ input(
                         name=filter.name,
                         label=filter.label,
