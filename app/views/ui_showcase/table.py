@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import reverse
 from django.views.generic import ListView
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 from ..templates.components.button import Button
 from ..templates.components.table import TableContext, TableAction, FilterParam, TableColumn
@@ -34,15 +36,30 @@ COLUMNS = [
         label='Address',
         sortable=True,
     ),
+    TableColumn(
+        name='created_at',
+        label='Created at',
+        sortable=True,
+        type=TableColumn.Type.DATETIME,
+    ),
 ]
 DATA = []
 if not DATA:
+    # Deterministic mock datetime range so the datetime filter is stable.
+    # Stored as aware datetimes so the table column formatter can render them.
+    local_tz = datetime.now().astimezone().tzinfo
+    base_dt = datetime(2026, 1, 1, 10, 0, 0, tzinfo=local_tz)
     for i in range(99):
         data = {
             'id': i,
             'phone': phone(),
             'address': address(),
         }
+        dt = base_dt + timedelta(days=i)
+        hour = i % 24
+        minute = (i * 5) % 60  # datetimepicker uses 5-minute steps by default
+        dt = dt.replace(hour=hour, minute=minute)
+        data['created_at'] = dt
         data['name'] = name()
         data['email'] = email(data['name'])
         DATA.append(data)
@@ -100,6 +117,14 @@ def get_common_context(request):
                 placeholder='Enter address',
                 type=FilterParam.Type.TEXT,
                 query=lambda value: (lambda target: target['address'].startswith(value))
+            ),
+            FilterParam(
+                name='created_since',
+                label='Created since',
+                placeholder='Select datetime',
+                type=FilterParam.Type.DATETIME,
+                value=request.GET.get('created_at') or '',
+                query=lambda value: (lambda target: timezone.localtime(target.get('created_at')) <= timezone.localtime(datetime.fromisoformat(value))),
             ),
         ],
         partial_url=reverse('ui_showcase_table_partial'),

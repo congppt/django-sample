@@ -7,26 +7,30 @@
   variant='date',
   label='',
   hint='',
+  class='',
   required=false,
   disabled=false,
   value='',
   error_message='',
-  placeholder_date='dd/mm/yyyy',
-  placeholder_time='HH:mm',
-  placeholder_datetime='dd/mm/yyyy HH:mm',
-  minute_step=5,
+  placeholder='',
   tooltip_content=none,
   tooltip_axis='vertical',
   extra_attributes={}
 ) %}
-  {# Input placeholder depends on the selected variant #}
-  {% if variant == 'time' %}
-    {% set placeholder = (placeholder_time or '') | trim %}
+  {# Caller-provided override for the displayed input placeholder. #}
+  {# If not provided, defaults vary by variant. #}
+  {% if placeholder %}
+    {% set input_placeholder = (placeholder or '') | trim %}
+  {% elif variant == 'time' %}
+    {% set input_placeholder = 'HH:mm' %}
   {% elif variant == 'datetime' %}
-    {% set placeholder = (placeholder_datetime or '') | trim %}
+    {% set input_placeholder = 'dd/mm/yyyy HH:mm' %}
   {% else %}
-    {% set placeholder = (placeholder_date or '') | trim %}
+    {% set input_placeholder = 'dd/mm/yyyy' %}
   {% endif %}
+
+  {# Read minute step from extra_attributes; don't render it as an HTML attribute. #}
+  {% set minute_step = get_attribute(extra_attributes, 'minute_step', 5) %}
 
   {% call wrapper(
     label=label,
@@ -38,7 +42,7 @@
     tooltip_axis=tooltip_axis
   ) %}
     <div
-      class="h-full relative"
+      class="h-full relative {{ class }}"
       x-data="{
         open: false,
         disabled: {{ jsonify(disabled) }},
@@ -123,9 +127,21 @@
           return `${this.pad2(hour)}:${this.pad2(minute)}:00`;
         },
 
+        formatTimezoneOffset(localDate) {
+          // Return local timezone offset in ISO8601 form: `+HH:MM` or `-HH:MM`
+          // `getTimezoneOffset()` is minutes behind UTC, so we invert the sign.
+          const offsetMinutes = -localDate.getTimezoneOffset();
+          const sign = offsetMinutes >= 0 ? '+' : '-';
+          const abs = Math.abs(offsetMinutes);
+          const hh = Math.floor(abs / 60);
+          const mm = abs % 60;
+          return `${sign}${this.pad2(hh)}:${this.pad2(mm)}`;
+        },
+
         formatDateTimeISO(dt, hour, minute) {
           if (!dt || hour === null || minute === null || hour === undefined || minute === undefined) return '';
-          return `${this.formatDateISO(dt)}T${this.pad2(hour)}:${this.pad2(minute)}:00`;
+          const local = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), hour, minute, 0, 0);
+          return `${this.formatDateISO(local)}T${this.pad2(hour)}:${this.pad2(minute)}:00${this.formatTimezoneOffset(local)}`;
         },
 
         sameLocalDate(a, b) {
@@ -453,7 +469,7 @@
               return;
             }
             this.setDraftDate(dt.getDate(), dt.getMonth(), dt.getFullYear());
-            if (!this.open) this.apply();
+            if (!this.open) this.apply(false);
             return;
           }
 
@@ -466,7 +482,7 @@
             this.draftHour = t.hour;
             this.draftMinute = t.minute - (t.minute % this.minuteStep);
             if (this.open) this.visibleValue = this.formatDraftDisplay();
-            if (!this.open) this.apply();
+            if (!this.open) this.apply(false);
             return;
           }
 
@@ -480,7 +496,7 @@
           this.draftHour = parsed.hour;
           this.draftMinute = parsed.minute - (parsed.minute % this.minuteStep);
           if (this.open) this.visibleValue = this.formatDraftDisplay();
-          if (!this.open) this.apply();
+          if (!this.open) this.apply(false);
         },
 
         openPicker() {
@@ -525,7 +541,7 @@
           this.openPicker();
         },
 
-        apply() {
+        apply(dispatchChange = false) {
           if (this.variant === 'date') {
             this.isoValue = this.draftDate ? this.formatDateISO(this.draftDate) : '';
           } else if (this.variant === 'time') {
@@ -538,11 +554,24 @@
               : '';
           }
 
+          const isoChanged = dispatchChange && this.committedIso !== this.isoValue;
+
           this.committedIso = this.isoValue;
           this.committedDisplayValue = this.formatDraftDisplay();
           this.visibleValue = this.committedDisplayValue;
           this.open = false;
           this.viewMode = 'day';
+
+          if (isoChanged) {
+            this.$nextTick(() => {
+              // Dispatch change only from the hidden input (stable for listeners).
+              if (this.$refs && this.$refs.input) {
+                this.$refs.input.dispatchEvent(
+                  new Event('change', { bubbles: true, composed: true })
+                );
+              }
+            });
+          }
         },
 
         cancel() {
@@ -635,7 +664,7 @@
           type="text"
           :id="$id('input')"
           x-model="visibleValue"
-          placeholder="{{ placeholder }}"
+          placeholder="{{ input_placeholder }}"
           {% if variant == 'time' %}
             x-mask="99:99"
           {% elif variant == 'datetime' %}
@@ -646,7 +675,8 @@
           :disabled="disabled"
           @focus="openPicker()"
           @click="openPicker()"
-          @change.stop="onInputChange()"
+          @change="onInputChange()"
+          x-ref="textInput"
           class="flex-1 px-2 pr-10 bg-transparent outline-none"
           :class="disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer text-slate-900'"
         />
@@ -674,7 +704,7 @@
           x-ref="panel"
           x-cloak
           x-transition
-          class="fixed z-50 min-w-fit rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden"
+          class="fixed z-50 min-w-fit rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden transition-[top,left,width,max-height] duration-150 ease-out"
           :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
           @click.stop
         >
@@ -718,7 +748,7 @@
                   (variant === 'time' && (draftHour === null || draftMinute === null)) ||
                   (variant === 'datetime' && (!draftDate || draftHour === null || draftMinute === null))
                 )"
-                @click="apply()"
+                @click="apply(true)"
               >
                 Áp dụng
               </button>
