@@ -10,7 +10,14 @@
     'label': 'UI Showcase',
     'url': url('ui_showcase'),
     'icon': 'play.svg',
-    'is_active': request.path.startswith(url('ui_showcase')),
+    'children': [
+        {
+            'label': 'UI Showcase',
+            'url': url('ui_showcase'),
+            'icon': 'play.svg',
+            'is_active': request.path.startswith(url('ui_showcase')),
+        },
+    ],
 },
 ]) %}
 {% set logo_html = '' %}
