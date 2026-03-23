@@ -1,3 +1,4 @@
+import json
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse
@@ -18,6 +19,16 @@ DB_PORT = __parsed_db_url.port
 DB_USER = __parsed_db_url.username
 DB_PASSWORD = __parsed_db_url.password
 DB_NAME = __parsed_db_url.path.lstrip('/')
+
+MINIO_CONFIG = os.getenv('MINIO_CONFIG')
+if not MINIO_CONFIG:
+    raise EnvironmentError("MINIO_URL is not configured")
+__parsed_minio_config = json.loads(MINIO_CONFIG)
+MINIO_ENDPOINT = __parsed_minio_config['endpoint']
+MINIO_ACCESS_KEY = __parsed_minio_config['username']
+MINIO_SECRET_KEY = __parsed_minio_config['password']
+MINIO_BUCKET = __parsed_minio_config['bucket']
+MINIO_PUBLIC_DOMAIN = __parsed_minio_config['public_domain']
 
 LOG_DIR = os.getenv('LOG_DIR', 'logs')
 

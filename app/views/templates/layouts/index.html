@@ -21,7 +21,22 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="{{ static('css/index.css') }}"/>
   <script src="{{ static('js/index.js') }}"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Sample - {% block title %}{% endblock %}</title>
+  <meta
+    name="htmx-config"
+    content='{
+          "responseHandling":[
+            {"code":"204", "swap": false},
+            {"code":"[23]..", "swap": true},
+            {"code":"422", "swap": true},
+            {"code":"[45]..", "swap": false, "error":true},
+            {"code":"...", "swap": false}
+          ]
+      }'
+  />
   {% block styles %}
   {% endblock %}
   {% block pre_scripts %}
@@ -31,8 +46,8 @@
 <body class="min-h-screen bg-gray-100 flex">
   {% include 'templates/layouts/sidebar.html' %}
   <main class="grow transition-all ease-in-out overflow-auto h-screen">
-    {% include 'templates/layouts/header.html' %}
-    <div class="mt-16">
+      {% include 'templates/layouts/header.html' %}
+    <div>
       {% block content %}{% endblock %}
     </div>
   </main>

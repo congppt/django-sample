@@ -16,6 +16,7 @@
     tooltip_axis='vertical',
     extra_attributes={}
   ) %}
+  {% set placeholder = (placeholder or '') | trim %}
   {% call wrapper(
     label=label,
     hint=hint,
@@ -50,7 +51,6 @@
       highlightedIndex: -1,
       reloadListener: null,
       fetchRequestId: 0,
-      resetSelectedAfterLoad: false,
       buildOptionsUrl(params = {}) {
         try {
           const url = new URL(this.optionsUrl, window.location.origin);
@@ -102,6 +102,22 @@
         const match = this.optionFor(val);
         return match?.klass || '';
       },
+      pruneSelectedToOptions() {
+        this.normalizeSelected();
+        const prev = [...this.selected];
+        const opts = Array.isArray(this.options) ? this.options : [];
+        if (!opts.length) {
+          this.selected = [];
+        } else {
+          const valid = new Set(opts.map(o => o.value));
+          const kept = this.selected.filter(v => valid.has(v));
+          this.selected = this.multiple ? kept : (kept.length ? [kept[0]] : []);
+        }
+        const changed =
+          prev.length !== this.selected.length ||
+          prev.some((v, i) => v !== this.selected[i]);
+        if (changed) this.notifyInputChanged();
+      },
       get selectedLabels() {
         this.normalizeSelected();
         return this.selected.map(val => ({ value: val, label: this.labelFor(val), klass: this.klassFor(val) }));
@@ -120,8 +136,6 @@
         if (this.hasLoaded && !force) return;
         this.isLoading = true;
         const requestId = ++this.fetchRequestId;
-        const shouldResetSelected = this.resetSelectedAfterLoad;
-        this.resetSelectedAfterLoad = false;
         const params = paramsOverride !== null ? paramsOverride : this.params;
         const url = this.buildOptionsUrl(params);
         fetch(url, {
@@ -137,14 +151,14 @@
             if (requestId !== this.fetchRequestId) return; // Ignore stale responses
             this.options = Array.isArray(data) ? data : [];
             this.hasLoaded = true;
-            if (shouldResetSelected) this.selected = [];
+            this.pruneSelectedToOptions();
             if (this.open) this.$nextTick(() => this.reposition());
           })
           .catch(() => {
             if (requestId !== this.fetchRequestId) return; // Ignore stale responses
             this.options = [];
             this.hasLoaded = true;
-            if (shouldResetSelected) this.selected = [];
+            this.pruneSelectedToOptions();
             if (this.open) this.$nextTick(() => this.reposition());
           })
           .finally(() => {
@@ -315,8 +329,6 @@
             }
 
             this.hasLoaded = false;
-            // Clear selection after the next successful/failed fetch is applied.
-            this.resetSelectedAfterLoad = true;
             this.searchQuery = '';
             this.highlightedIndex = -1;
             this.fetchOptions(true);

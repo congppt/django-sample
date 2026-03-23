@@ -20,7 +20,7 @@ COPY . /dist
 # Install Python dependencies
 RUN pip install -r requirements.txt
 
-RUN chmod +x /dist/start.sh
+RUN chmod +x /dist/linux-start.sh
 
 # Expose port 8000 for the application
 EXPOSE 8000

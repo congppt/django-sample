@@ -2,7 +2,7 @@
 {% macro toast(source) %}
 {% set messages = [] %}
 {% for message in source %}
-{{ messages.append({'message': message.message,'level': message.level }) }}
+{% set _ = messages.append({'message': message.message,'level': message.level, 'id': uuid() }) %}
 {% endfor %}
 <div id="toast-manager" class="fixed top-16 right-0 p-4" style="z-index: 9999;">
     <div id="toast-container"
@@ -61,7 +61,7 @@
 
 
                 <!-- Message -->
-                <div class="mx-3 text-sm font-normal" x-text="message.message"></div>
+                <div class="mx-3 text-sm font-normal flex-1" x-text="message.message"></div>
 
                 <!-- Close Button -->
                 {{

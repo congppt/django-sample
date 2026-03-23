@@ -25,7 +25,7 @@ class MessageMiddleware:
             {
                 'message': message.message,
                 'level': message.level,
-                'id': int(time.time()) + random.randint(10, 99)
+                'id': time.time_ns()
             } for message in get_messages(request)
         ]
         response.headers['HX-Trigger'] = jsonify(hx_trigger)
