@@ -740,7 +740,7 @@
           @click="openPicker()"
           @change="onInputChange()"
           x-ref="textInput"
-          class="flex-1 px-2 bg-transparent outline-none"
+          class="w-48 flex-1 px-2 bg-transparent outline-none"
           :class="(disabled ? 'cursor-not-allowed opacity-70 ' : 'cursor-pointer text-slate-900 ') + ({{ jsonify(clearable) }} ? 'pr-16' : 'pr-10')"
         />
 

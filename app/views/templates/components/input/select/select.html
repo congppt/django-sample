@@ -30,7 +30,7 @@
   {% set value = [value] if value else [] %}
   {% endif %}
   <div
-    class="h-full {{ class }}"
+    class="h-full w-full min-w-0 {{ class }}"
     x-data="{
       optionsUrl: '{{ options_url }}',
       reloadEvents: {{ jsonify(reload_events or []) }},
@@ -39,10 +39,13 @@
       multiple: {{ jsonify(multiple) }},
       open: false,
       placement: 'bottom',
-      coords: { top: 0, left: 0, width: 0, maxHeight: 240 },
+      panelPlacement: 'bottom',
+      coords: { top: 0, left: 0, minWidth: 0 },
       margin: 12,
       repositionListener: null,
+      outsideClickListener: null,
       searchQuery: '',
+      isFiltering: false,
       initialSelected: {{ jsonify(value) }},
       selected: [],
       options: [],
@@ -123,6 +126,7 @@
         return this.selected.map(val => ({ value: val, label: this.labelFor(val), klass: this.klassFor(val) }));
       },
       get filteredOptions() {
+        if (!this.isFiltering) return this.options;
         const q = (this.searchQuery || '').trim();
         if (!q) return this.options;
         const normalizedQuery = unaccent(q).toLowerCase();
@@ -130,6 +134,12 @@
           const label = unaccent(option.label || '').toLowerCase();
           return label.includes(normalizedQuery);
         });
+      },
+      selectedSearchLabel() {
+        this.normalizeSelected();
+        if (!this.selected.length) return '';
+        if (this.multiple) return this.selected.map(val => this.labelFor(val)).join('; ');
+        return this.labelFor(this.selected[0]);
       },
       fetchOptions(force = false, paramsOverride = null) {
         if (this.isLoading && !force) return;
@@ -169,65 +179,103 @@
       },
       reposition() {
         if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return;
-  
+
         const triggerRect = this.$refs.trigger.getBoundingClientRect();
         const panelEl = this.$refs.panel;
-  
-        const previousDisplay = panelEl.style.display;
-        const previousVisibility = panelEl.style.visibility;
-  
-        panelEl.style.visibility = 'hidden';
-        panelEl.style.display = 'block';
         const panelRect = panelEl.getBoundingClientRect();
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
         const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
         const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-  
+        const margin = this.margin || 12;
         const gap = 6;
-        const spaceAbove = triggerRect.top - this.margin;
-        const spaceBelow = viewportHeight - triggerRect.bottom - this.margin;
-  
-        let placement = 'bottom';
-        if (spaceBelow < 200 && spaceAbove > spaceBelow) placement = 'top';
-  
-        const maxAvailable = placement === 'bottom' ? spaceBelow : spaceAbove;
-        const maxHeight = Math.max(140, Math.min(320, maxAvailable));
-  
-        const width = Math.max(0, Math.min(triggerRect.width, viewportWidth - this.margin * 2));
+
+        const width = panelRect.width || panelEl.scrollWidth || triggerRect.width;
+        const minLeft = margin;
+        const maxLeft = viewportWidth - width - margin;
         let left = triggerRect.left;
-        if (left < this.margin) left = this.margin;
-        const maxLeft = viewportWidth - width - this.margin;
-        if (left > maxLeft) left = maxLeft;
-  
+        if (left > maxLeft) {
+          left = triggerRect.right - width;
+        }
+        if (maxLeft < minLeft) {
+          left = minLeft;
+        } else {
+          if (left < minLeft) left = minLeft;
+          if (left > maxLeft) left = maxLeft;
+        }
+
+        const spaceAbove = triggerRect.top - margin;
+        const spaceBelow = viewportHeight - triggerRect.bottom - margin;
+        const maxAvailable = Math.max(0, (this.panelPlacement === 'bottom' ? spaceBelow : spaceAbove) - gap);
+        let placement = this.panelPlacement;
+        if (placement === 'bottom' && spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow) {
+          placement = 'top';
+        } else if (placement === 'top' && spaceAbove < panelRect.height + gap && spaceBelow > spaceAbove) {
+          placement = 'bottom';
+        }
         let top;
         if (placement === 'bottom') {
           top = triggerRect.bottom + gap;
-          const maxTop = viewportHeight - maxHeight - this.margin;
-          if (top > maxTop) top = maxTop;
         } else {
-          top = triggerRect.top - Math.min(panelRect.height, maxHeight) - gap;
-          if (top < this.margin) top = this.margin;
+          top = triggerRect.top - panelRect.height - gap;
         }
-  
+
         this.placement = placement;
-        this.coords = { top, left, width, maxHeight };
-  
-        panelEl.style.display = previousDisplay;
-        panelEl.style.visibility = previousVisibility;
+        this.coords = { top: top + scrollY, left: left + scrollX, minWidth: triggerRect.width };
+      },
+      getPreferredPlacement() {
+        if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return 'bottom';
+        const triggerRect = this.$refs.trigger.getBoundingClientRect();
+        const panelRect = this.$refs.panel.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const margin = this.margin || 12;
+        const gap = 6;
+        const spaceAbove = triggerRect.top - margin;
+        const spaceBelow = viewportHeight - triggerRect.bottom - margin;
+        const needsTop = spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow;
+        if (needsTop) return 'top';
+        return 'bottom';
       },
       openDropdown() {
         if (this.open) return;
+        const triggerRect = this.$refs?.trigger?.getBoundingClientRect?.();
+        if (triggerRect) {
+          const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+          const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          this.coords = {
+            top: triggerRect.bottom + scrollY + 6,
+            left: triggerRect.left + scrollX,
+            minWidth: triggerRect.width
+          };
+        }
+        this.isFiltering = false;
+        this.searchQuery = this.multiple ? '' : this.selectedSearchLabel();
         this.open = true;
         this.highlightedIndex = -1;
         this.fetchOptions();
         this.$nextTick(() => {
-          this.reposition();
-          this.$refs.searchInput?.focus();
+          requestAnimationFrame(() => {
+            this.panelPlacement = this.getPreferredPlacement();
+            this.reposition();
+            this.startOutsideClickListener();
+            this.$refs.searchInput?.focus();
+          });
         });
       },
       closeDropdown() {
         this.open = false;
+        this.isFiltering = false;
         this.highlightedIndex = -1;
         this.searchQuery = '';
+        this.stopOutsideClickListener();
+      },
+      onSearchKeydown(event) {
+        if (event.defaultPrevented || event.isComposing) return;
+        const isModifier = event.ctrlKey || event.altKey || event.metaKey;
+        const isCharacter = event.key && event.key.length === 1 && !isModifier;
+        const isBackspace = event.key === 'Backspace';
+        if ((!isCharacter && !isBackspace) || this.isFiltering) return;
+        this.isFiltering = true;
       },
       clear(e) {
         e.stopPropagation();
@@ -309,6 +357,28 @@
           this.chooseByIndex(this.highlightedIndex);
         }
       },
+      startOutsideClickListener() {
+        if (this.outsideClickListener) return;
+        this.outsideClickListener = (event) => {
+          if (!this.open) return;
+          const trigger = this.$refs?.trigger;
+          const panel = this.$refs?.panel;
+          if (!trigger || !panel) return;
+          const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+          const isInsideTrigger = path.includes(trigger) || trigger.contains(event.target);
+          const isInsidePanel = path.includes(panel) || panel.contains(event.target);
+          if (isInsideTrigger || isInsidePanel) return;
+          this.closeDropdown();
+        };
+        document.addEventListener('mousedown', this.outsideClickListener, true);
+        document.addEventListener('touchstart', this.outsideClickListener, true);
+      },
+      stopOutsideClickListener() {
+        if (!this.outsideClickListener) return;
+        document.removeEventListener('mousedown', this.outsideClickListener, true);
+        document.removeEventListener('touchstart', this.outsideClickListener, true);
+        this.outsideClickListener = null;
+      },
       init() {
         this.fetchOptions();
         this.selected = this.initialSelected;
@@ -343,6 +413,7 @@
           window.removeEventListener('resize', this.repositionListener);
           window.removeEventListener('scroll', this.repositionListener, true);
         }
+        this.stopOutsideClickListener();
         if (this.reloadListener) {
           this.reloadEvents.forEach(eventName => {
             window.removeEventListener(eventName, this.reloadListener);
@@ -351,7 +422,6 @@
       },
     }"
     @keydown.escape.window="closeDropdown()"
-    @click.outside="closeDropdown()"
   >
     <select
       {% if multiple %}multiple{% endif %}
@@ -374,20 +444,26 @@
       :aria-activedescendant="open && highlightedIndex >= 0 ? `${$id('input')}-option-${highlightedIndex}` : null"
       :id="$id('input')"
       tabindex="0"
-      @click="open ? closeDropdown() : openDropdown()"
+      @click="openDropdown()"
       @keydown.down.prevent="onArrowDown()"
       @keydown.up.prevent="onArrowUp()"
       @keydown.enter.prevent="onEnter()"
-      class="h-full flex items-center transition"
+      class="relative h-full flex items-center transition"
     >
-    <div x-show="!open" class="flex px-2 flex-1 items-center gap-1.5 min-w-0">
+    <div x-show="!open" class="flex px-2 pr-14 w-48 flex-1 items-center gap-1.5">
         <template x-if="selectedLabels.length === 0">
           <span class="truncate text-slate-500">{{ placeholder|trim }}</span>
         </template>
       
         <template x-if="selectedLabels.length > 0">
           {% if multiple %}
-            <div class="flex flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-auto" style="scrollbar-width: thin;">
+            <div
+              data-selected-scroll="true"
+              class="flex flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto overflow-y-hidden"
+              style="scrollbar-width: thin;"
+              @mousedown.stop
+              @click.stop
+            >
               <template x-for="item in selectedLabels.slice(0, 3)" :key="`chip-${item.value}`">
                 <span
                   class="inline-flex flex-shrink max-w-80 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
@@ -409,7 +485,7 @@
               </template>
             </div>
           {% else %}
-            <div class="flex-1 max-w-full truncate text-slate-900">
+            <div class="flex-1 truncate text-slate-900">
               <span x-text="selectedLabels[0].label"></span>
             </div>
           {% endif %}
@@ -422,15 +498,17 @@
         x-show="open"
         x-model="searchQuery"
         type="text"
-        class="flex-1 px-2 text-slate-900 outline-none"
+        class="w-48 flex-1 px-2 pr-14 text-slate-900 outline-none"
         placeholder="{{ placeholder|trim }}"
+        @mousedown.stop
         @click.stop
+        @keydown="onSearchKeydown($event)"
         @keyup.stop
         @input="$nextTick(() => reposition())"
         @change.stop
       />
   
-      <span class="flex shrink-0 items-center px-3 gap-0.5">
+      <span class="absolute inset-y-0 right-0 flex shrink-0 items-center px-3 gap-0.5">
         <span x-show="isLoading" x-cloak style="display: none;" class="inline-flex text-slate-400 shrink-0 max-h-[1em] w-[1em] [&>svg]:max-h-full [&>svg]:w-full [&>svg]:max-w-none animate-spin">
           {% include 'spinner.svg' %}
         </span>
@@ -456,42 +534,53 @@
       </span>
     </div>
   
-    <div
-      x-show="open"
-      x-ref="panel"
-      x-cloak
-      x-transition
-      :id="$id('input') + '-listbox'"
-      role="listbox"
-      :aria-labelledby="$id('input')"
-      class="fixed z-50 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-      :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
-      :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
-    >
-      <template x-if="!isLoading && filteredOptions.length === 0">
-        <div class="px-3 py-2 text-xs text-slate-500">
-          Không tìm thấy kết quả phù hợp.
-        </div>
-      </template>
-      <template x-for="(option, index) in filteredOptions" :key="option.value">
-        <div
-          role="option"
-          :id="`${$id('input')}-option-${index}`"
-          :aria-selected="isSelected(option.value)"
-          @click="toggle(option.value);"
-          class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
-          :class="[
-            index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-            isSelected(option.value) ? 'font-medium' : ''
-          ]"
-        >
-          <span class="mr-2 break-words whitespace-normal" x-text="option.label"></span>
-          <span x-show="isSelected(option.value)" x-cloak class="shrink-0 text-red-600">
-            ✓
-          </span>
-        </div>
-      </template>
-    </div>
+    <template x-teleport="body">
+      <div
+        x-show="open"
+        x-ref="panel"
+        x-cloak
+        x-transition:enter="transition-opacity ease-out duration-150"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-in duration-100"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        :id="$id('input') + '-listbox'"
+        role="listbox"
+        :aria-labelledby="$id('input')"
+        class="absolute z-500 max-w-80 max-h-80 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+        :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
+        :style="{
+          inset: '0px auto auto 0px',
+          minWidth: coords.minWidth + 'px',
+          transform: 'translate(' + coords.left + 'px, ' + coords.top + 'px)'
+        }"
+      >
+        <template x-if="!isLoading && filteredOptions.length === 0">
+          <div class="px-3 py-2 text-xs text-slate-500">
+            Không tìm thấy kết quả phù hợp.
+          </div>
+        </template>
+        <template x-for="(option, index) in filteredOptions" :key="option.value">
+          <div
+            role="option"
+            :id="`${$id('input')}-option-${index}`"
+            :aria-selected="isSelected(option.value)"
+            @click="toggle(option.value);"
+            class="flex cursor-pointer items-center justify-between px-3 py-2 text-sm"
+            :class="[
+              index === highlightedIndex ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+              isSelected(option.value) ? 'font-medium' : ''
+            ]"
+          >
+            <span class="mr-2 break-words whitespace-normal" x-text="option.label"></span>
+            <span x-show="isSelected(option.value)" x-cloak class="shrink-0 text-red-600">
+              ✓
+            </span>
+          </div>
+        </template>
+      </div>
+    </template>
   </div>
   {% endcall %}
   {% endmacro %}
