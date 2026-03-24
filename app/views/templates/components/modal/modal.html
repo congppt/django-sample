@@ -8,50 +8,51 @@
   @keydown.escape.window="closeTop && closeTop()"
   class="contents"
 >
-  <template x-for="(m, idx) in modals" :key="m.id">
-    <div class="fixed inset-0 z-499" x-show="m.open" x-transition.opacity>
-      <div
-        class="absolute inset-0 flex items-center justify-center bg-black/50 p-4"
-        :style="`z-index: ${500 + idx}`"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="m.ariaLabel || 'Modal'"
-        x-on:click.self="close && close(m.id)"
-      >
+  <template x-for="m in modals" :key="m.id">
+    <template x-teleport="body">
+      <div class="fixed inset-0 z-500" x-show="m.open" x-transition.opacity>
         <div
-          class="w-fit max-w-6xl rounded-xl bg-white shadow-2xl ring-1 ring-black/10 overflow-hidden"
-          x-on:click.stop
+          class="absolute inset-0 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="m.ariaLabel || 'Modal'"
+          x-on:click.self="close && close(m.id)"
         >
-          <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3">
-            <div class="min-w-0">
-              <h2 class="truncate text-base font-semibold text-slate-900" x-text="m.title || ''"></h2>
+          <div
+            class="w-fit max-w-6xl rounded-xl bg-white shadow-2xl ring-1 ring-black/10 overflow-hidden"
+            x-on:click.stop
+          >
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3">
+              <div class="min-w-0">
+                <h2 class="truncate text-base font-semibold text-slate-900" x-text="m.title || ''"></h2>
+              </div>
+              <button
+                type="button"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                x-on:click="close && close(m.id)"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            <button
-              type="button"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
-              x-on:click="close && close(m.id)"
-              aria-label="Close"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
 
-          <div class="px-4 py-4 max-h-[calc(100vh-10rem)] overflow-auto">
-            <div
-              :id="`modal-body-${m.id}`"
-              :hx-get="m.url"
-              hx-trigger="modal:load"
-              hx-target="this"
-              hx-ext="alpine-morph"
-              hx-swap="morph"
-              class="min-h-[2rem]"
-            >
-              <div class="text-sm text-slate-600" x-show="m.loading">Loading…</div>
+            <div class="px-4 py-4 max-h-[calc(100vh-10rem)] overflow-auto">
+              <div
+                :id="`modal-body-${m.id}`"
+                :hx-get="m.url"
+                hx-trigger="modal:load"
+                hx-target="this"
+                hx-ext="alpine-morph"
+                hx-swap="morph"
+                class="min-h-[2rem]"
+              >
+                <div class="text-sm text-slate-600" x-show="m.loading">Loading…</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </template>
 </div>
 
