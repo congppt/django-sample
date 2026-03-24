@@ -43,13 +43,16 @@
   {% endblock %}
 </head>
 
-<body class="min-h-screen bg-gray-100 flex">
-  {% include 'templates/layouts/sidebar.html' %}
-  <main class="grow transition-all ease-in-out overflow-auto h-screen">
+<body>
+  <main  class="min-h-screen bg-gray-100 flex">
+    {% include 'templates/layouts/sidebar.html' %}
+    <div class="grow transition-all ease-in-out">
       {% include 'templates/layouts/header.html' %}
-    <div>
-      {% block content %}{% endblock %}
+      <div>
+        {% block content %}{% endblock %}
+      </div>
     </div>
+      
   </main>
   {{ modal() }}
   {{ toast(source=get_messages(request)) }}

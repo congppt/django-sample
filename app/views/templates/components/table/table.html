@@ -3,7 +3,7 @@
 {% from 'templates/components/input/base/input.html' import input %}
 {% from 'templates/components/input/select/select.html' import select %}
 {% from 'templates/components/input/datetimepicker/datetimepicker.html' import datetimepicker %}
-{% from 'templates/components/input/datetimepicker/datepicker.html' import datepicker %}
+{% from 'templates/components/menu/menu.html' import menu %}
 {% macro table(
     header='',
     filters=[],
@@ -89,9 +89,10 @@
             {% endfor %}
         </form>
         
-        {# Table Actions (Buttons below search/filters) - chỉ hiển thị actions có scope='table' #}
         <div class="mb-4 flex flex-wrap gap-2 justify-end">
             {% for action in actions|default([]) %}
+            {% set ctx_menu = get_attribute(action.extra_attributes, 'menu', {}) %}
+            {% call menu(groups=ctx_menu.groups, position=ctx_menu.position) %}
             {{
                 button(
                     text=action.label,
@@ -106,6 +107,7 @@
                     extra_attributes=action.extra_attributes,
                 )
             }}
+            {% endcall %}
             {% endfor %}
             {% for action in bulk_actions|default([]) %}
             {% set extra_attributes = dict(action.extra_attributes, **{'@bulk-actions.window': "if ($event.target.id === $id('table')) { disabled = !$event.detail;}"}) %}

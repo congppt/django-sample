@@ -125,6 +125,9 @@ def get_common_context(request):
                 type=FilterParam.Type.DATETIME,
                 value=request.GET.get('created_at') or '',
                 query=lambda value: (lambda target: timezone.localtime(target.get('created_at')) <= timezone.localtime(datetime.fromisoformat(value))),
+                extra_attributes={
+                    'clearable': True,
+                },
             ),
         ],
         partial_url=reverse('ui_showcase_table_partial'),
@@ -164,6 +167,50 @@ def get_common_context(request):
                         ariaLabel: "Aria label" 
                     }} 
                     );'''
+                }
+            ),
+            TableAction(
+                label='Context menu',
+                icon='circle.svg',
+                icon_position=Button.IconPosition.LEFT,
+                variant=Button.Variant.OUTLINED,
+                disabled=False,
+                extra_attributes={
+                    'menu': {
+                        'groups': [
+                            [
+                                {
+                                    'label': 'Open simple modal',
+                                    'icon': 'circle.svg',
+                                },
+                                {
+                                    'label': 'Load table',
+                                    'icon': 'circle.svg',
+                                }
+                            ],
+                            [
+                                {
+                                'label': 'Duplicate',
+                                'icon': 'circle.svg',
+                                'extra_attributes': { '@click': '$dispatch("menu:duplicate")' }
+                                },
+                                {
+                                'label': 'Archive',
+                                'icon': 'circle.svg',
+                                'extra_attributes': { '@click': '$dispatch("menu:archive")' }
+                                }
+                            ],
+                            [
+                                {
+                                'label': 'Delete',
+                                'icon': 'circle.svg',
+                                'danger': True,
+                                'extra_attributes': { '@click': '$dispatch("menu:delete")' }
+                                }
+                            ]
+                        ],
+                        'position': 'left',
+                    }
                 }
             )
         ],

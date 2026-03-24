@@ -1,6 +1,6 @@
 {% from 'templates/components/input/wrapper.html' import wrapper %}
-{% from 'templates/components/input/datetimepicker/datepicker.html' import datepicker_panel %}
-{% from 'templates/components/input/datetimepicker/timepicker.html' import timepicker_panel %}
+{% from 'templates/components/input/datetimepicker/datepanel.html' import datepicker_panel %}
+{% from 'templates/components/input/datetimepicker/timepanel.html' import timepicker_panel %}
 
 {% macro datetimepicker(
   name,
@@ -31,6 +31,7 @@
 
   {# Read minute step from extra_attributes; don't render it as an HTML attribute. #}
   {% set minute_step = get_attribute(extra_attributes, 'minute_step', 5) %}
+  {% set clearable = get_attribute(extra_attributes, 'clearable', false) %}
 
   {% call wrapper(
     label=label,
@@ -49,8 +50,9 @@
         variant: {{ jsonify(variant) }},
 
         viewMode: 'day',
-        coords: { top: 0, left: 0, width: 0, maxHeight: 420 },
-        repositionListener: null,
+        coords: { top: 0, left: 0, width: 0 },
+        outsideClickListener: null,
+        panelPlacement: 'bottom',
 
         today: new Date(),
         minuteStep: {{ minute_step | int }},
@@ -365,6 +367,32 @@
           return `${this.formatDateDisplay(this.draftDate)} ${this.formatTimeDisplay(this.draftHour, this.draftMinute)}`;
         },
 
+        hasValue() {
+          return !!this.committedIso;
+        },
+
+        clearValue() {
+          if (this.disabled) return;
+          this.draftDate = null;
+          this.draftDateDisplay = '';
+          this.draftHour = null;
+          this.draftMinute = null;
+          this.isoValue = '';
+          this.committedIso = '';
+          this.committedDisplayValue = '';
+          this.visibleValue = '';
+          this.open = false;
+          this.stopOutsideClickListener();
+          this.viewMode = 'day';
+          this.$nextTick(() => {
+            if (this.$refs && this.$refs.input) {
+              this.$refs.input.dispatchEvent(
+                new Event('change', { bubbles: true, composed: true })
+              );
+            }
+          });
+        },
+
         _loadDraftFromIso(iso) {
           // Reset
           this.draftDate = null;
@@ -501,6 +529,16 @@
 
         openPicker() {
           if (this.disabled) return;
+          if (this.open) return;
+          if (this.$refs && this.$refs.trigger) {
+            const triggerRect = this.$refs.trigger.getBoundingClientRect();
+            const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+            const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            this.coords = {
+              top: triggerRect.bottom + scrollY + 6,
+              left: triggerRect.left + scrollX,
+            };
+          }
           this.open = true;
           this.viewMode = 'day';
 
@@ -528,8 +566,11 @@
           this.visibleValue = this.formatDraftDisplay();
 
           this.$nextTick(() => {
-            this.reposition();
-            this.startRepositioning();
+            requestAnimationFrame(() => {
+              this.panelPlacement = this.getPreferredPlacement();
+              this.reposition();
+              this.startOutsideClickListener();
+            });
           });
         },
 
@@ -560,6 +601,7 @@
           this.committedDisplayValue = this.formatDraftDisplay();
           this.visibleValue = this.committedDisplayValue;
           this.open = false;
+          this.stopOutsideClickListener();
           this.viewMode = 'day';
 
           if (isoChanged) {
@@ -582,6 +624,7 @@
           this.buildCalendar();
           this.visibleValue = this.committedDisplayValue;
           this.open = false;
+          this.stopOutsideClickListener();
           this.viewMode = 'day';
         },
 
@@ -589,73 +632,93 @@
           if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return;
           const triggerRect = this.$refs.trigger.getBoundingClientRect();
           const panelEl = this.$refs.panel;
+          const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+          const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
           const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
           const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
           const margin = 12;
           const gap = 6;
 
-          const previousDisplay = panelEl.style.display;
-          const previousVisibility = panelEl.style.visibility;
-          panelEl.style.visibility = 'hidden';
-          panelEl.style.display = 'block';
           const panelRect = panelEl.getBoundingClientRect();
-
-          const spaceAbove = triggerRect.top - margin;
-          const spaceBelow = viewportHeight - triggerRect.bottom - margin;
-
-          let placement = 'bottom';
-          if (spaceBelow < 200 && spaceAbove > spaceBelow) placement = 'top';
-
-          const maxAvailable = placement === 'bottom' ? spaceBelow : spaceAbove;
-          const maxHeight = Math.max(240, Math.min(520, maxAvailable));
 
           // `panelRect.width` can briefly be 0 when measured right after opening (transitions / cloaking).
           // Fall back to scrollWidth and trigger width to avoid collapsing the popover.
           const naturalWidth = panelRect.width || panelEl.scrollWidth || triggerRect.width;
           const width = Math.max(0, Math.min(naturalWidth, viewportWidth - margin * 2));
-          let left = triggerRect.left;
-          if (left < margin) left = margin;
+          const minLeft = margin;
           const maxLeft = viewportWidth - width - margin;
+          let left = triggerRect.left;
+          if (left > maxLeft) {
+            // Prefer right-aligned anchor before hard clamping.
+            left = triggerRect.right - width;
+          }
+          if (left < minLeft) left = minLeft;
           if (left > maxLeft) left = maxLeft;
 
+          const spaceAbove = triggerRect.top - margin;
+          const spaceBelow = viewportHeight - triggerRect.bottom - margin;
+          let placement = this.panelPlacement;
+          if (placement === 'bottom' && spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow) {
+            placement = 'top';
+          } else if (placement === 'top' && spaceAbove < panelRect.height + gap && spaceBelow > spaceAbove) {
+            placement = 'bottom';
+          }
           let top;
           if (placement === 'bottom') {
             top = triggerRect.bottom + gap;
-            const maxTop = viewportHeight - maxHeight - margin;
-            if (top > maxTop) top = maxTop;
           } else {
-            top = triggerRect.top - Math.min(panelRect.height, maxHeight) - gap;
-            if (top < margin) top = margin;
+            top = triggerRect.top - panelRect.height - gap;
           }
 
-          panelEl.style.display = previousDisplay;
-          panelEl.style.visibility = previousVisibility;
-
           this.placement = placement;
-          this.coords = { top, left, width, maxHeight };
-        },
-
-        startRepositioning() {
-          if (this.repositionListener) return;
-          this.repositionListener = () => {
-            if (!this.open) return;
-            this.reposition();
+          this.coords = {
+            top: top + scrollY,
+            left: left + scrollX,
+            width,
           };
-          window.addEventListener('resize', this.repositionListener);
-          window.addEventListener('scroll', this.repositionListener, true);
         },
 
-        stopRepositioning() {
-          if (!this.repositionListener) return;
-          window.removeEventListener('resize', this.repositionListener);
-          window.removeEventListener('scroll', this.repositionListener, true);
-          this.repositionListener = null;
+        getPreferredPlacement() {
+          if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return 'bottom';
+          const triggerRect = this.$refs.trigger.getBoundingClientRect();
+          const panelRect = this.$refs.panel.getBoundingClientRect();
+          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+          const margin = 12;
+          const gap = 6;
+          const spaceAbove = triggerRect.top - margin;
+          const spaceBelow = viewportHeight - triggerRect.bottom - margin;
+          const needsTop = spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow;
+          if (needsTop) return 'top';
+          return 'bottom';
+        },
+
+        startOutsideClickListener() {
+          if (this.outsideClickListener) return;
+          this.outsideClickListener = (event) => {
+            if (!this.open) return;
+            const trigger = this.$refs?.trigger;
+            const panel = this.$refs?.panel;
+            if (!trigger || !panel) return;
+            const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+            const isInsideTrigger = path.includes(trigger) || trigger.contains(event.target);
+            const isInsidePanel = path.includes(panel) || panel.contains(event.target);
+            if (isInsideTrigger || isInsidePanel) return;
+            this.cancel();
+          };
+          document.addEventListener('mousedown', this.outsideClickListener, true);
+          document.addEventListener('touchstart', this.outsideClickListener, true);
+        },
+
+        stopOutsideClickListener() {
+          if (!this.outsideClickListener) return;
+          document.removeEventListener('mousedown', this.outsideClickListener, true);
+          document.removeEventListener('touchstart', this.outsideClickListener, true);
+          this.outsideClickListener = null;
         },
 
       }"
-      x-init="init(); $watch('open', (v) => { if (!v) { stopRepositioning(); } })"
+      x-init="init()"
       @keydown.escape.window="if (open) cancel()"
-      @click.outside="if (open) cancel()"
     >
       <input type="hidden" name="{{ name }}" :value="isoValue" x-ref="input" {{ extra_attributes | xmlattr }} />
 
@@ -677,9 +740,20 @@
           @click="openPicker()"
           @change="onInputChange()"
           x-ref="textInput"
-          class="flex-1 px-2 pr-10 bg-transparent outline-none"
-          :class="disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer text-slate-900'"
+          class="flex-1 px-2 bg-transparent outline-none"
+          :class="(disabled ? 'cursor-not-allowed opacity-70 ' : 'cursor-pointer text-slate-900 ') + ({{ jsonify(clearable) }} ? 'pr-16' : 'pr-10')"
         />
+
+        <button
+          x-show="{{ jsonify(clearable) }} && hasValue()"
+          type="button"
+          class="absolute inset-y-0 right-9 flex items-center px-1 text-slate-400 transition-colors hover:text-slate-600 disabled:opacity-50"
+          :disabled="disabled"
+          @click.stop="clearValue()"
+          aria-label="Clear value"
+        >
+          <span class="h-4 w-4">{% include 'close.svg' %}</span>
+        </button>
 
         <button
           type="button"
@@ -699,62 +773,72 @@
           {% endif %}
         </button>
 
-        <div
-          x-show="open"
-          x-ref="panel"
-          x-cloak
-          x-transition
-          class="fixed z-50 min-w-fit rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden transition-[top,left,width,max-height] duration-150 ease-out"
-          :style="{ top: coords.top + 'px', left: coords.left + 'px', width: coords.width + 'px', maxHeight: coords.maxHeight + 'px' }"
-          @click.stop
-        >
-          <div class="p-3">
-            {% if variant == 'datetime' %}
-              <div class="flex flex-nowrap items-start gap-2">
-                <div class="flex-1">
-                  {{ datepicker_panel() }}
+        <template x-teleport="body">
+          <div
+            x-show="open"
+            x-cloak
+            x-ref="panel"
+            x-transition:enter="transition-opacity ease-out duration-150"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition-opacity ease-in duration-100"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute z-50 min-w-fit rounded-lg border border-slate-200 bg-white shadow-lg"
+            :style="{
+              inset: '0px auto auto 0px',
+              transform: 'translate(' + coords.left + 'px, ' + coords.top + 'px)'
+            }"
+            @click.stop
+          >
+              <div class="p-3">
+              {% if variant == 'datetime' %}
+                <div class="flex flex-nowrap items-start gap-2">
+                  <div class="flex-1">
+                    {{ datepicker_panel() }}
+                  </div>
+                  <div class="shrink-0">
+                    {{ timepicker_panel() }}
+                  </div>
                 </div>
-                <div class="shrink-0">
-                  {{ timepicker_panel() }}
+              {% else %}
+                <div class="space-y-3">
+                  {% if variant != 'time' %}
+                    {{ datepicker_panel() }}
+                  {% endif %}
+
+                  {% if variant != 'date' %}
+                    {{ timepicker_panel() }}
+                  {% endif %}
                 </div>
+              {% endif %}
+
+              <div class="flex justify-end gap-3 pt-1">
+                <button
+                  type="button"
+                  class="h-9 rounded-lg border border-red-700 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  :disabled="disabled"
+                  @click="cancel()"
+                >
+                  Hủy
+                </button>
+
+                <button
+                  type="button"
+                  class="h-9 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+                  :disabled="disabled || (
+                    (variant === 'date' && !draftDate) ||
+                    (variant === 'time' && (draftHour === null || draftMinute === null)) ||
+                    (variant === 'datetime' && (!draftDate || draftHour === null || draftMinute === null))
+                  )"
+                  @click="apply(true)"
+                >
+                  Áp dụng
+                </button>
               </div>
-            {% else %}
-              <div class="space-y-3">
-                {% if variant != 'time' %}
-                  {{ datepicker_panel() }}
-                {% endif %}
-
-                {% if variant != 'date' %}
-                  {{ timepicker_panel() }}
-                {% endif %}
               </div>
-            {% endif %}
-
-            <div class="flex justify-end gap-3 pt-1">
-              <button
-                type="button"
-                class="h-9 rounded-lg border border-red-700 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-                :disabled="disabled"
-                @click="cancel()"
-              >
-                Hủy
-              </button>
-
-              <button
-                type="button"
-                class="h-9 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
-                :disabled="disabled || (
-                  (variant === 'date' && !draftDate) ||
-                  (variant === 'time' && (draftHour === null || draftMinute === null)) ||
-                  (variant === 'datetime' && (!draftDate || draftHour === null || draftMinute === null))
-                )"
-                @click="apply(true)"
-              >
-                Áp dụng
-              </button>
-            </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
   {% endcall %}

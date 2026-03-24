@@ -1,5 +1,8 @@
 {% from 'templates/components/button/button.html' import button %}
 {% macro menu(groups=[], position='') %}
+{% if not groups %}
+  {{ caller() }}
+{% else %}
 <div class="relative w-fit" x-data="{ open: false }">
   <span @click="open = !open" class="flex items-center bg-tranparent">
     {{ caller() }}
@@ -44,4 +47,5 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endmacro %}
