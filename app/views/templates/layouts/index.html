@@ -44,11 +44,11 @@
 </head>
 
 <body>
-  <main  class="min-h-screen bg-gray-100 flex">
+  <main  class="h-screen bg-gray-100 flex">
     {% include 'templates/layouts/sidebar.html' %}
-    <div class="grow transition-all ease-in-out">
+    <div class="grow flex flex-col overflow-auto">
       {% include 'templates/layouts/header.html' %}
-      <div>
+      <div class="flex-1 overflow-auto">
         {% block content %}{% endblock %}
       </div>
     </div>

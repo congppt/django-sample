@@ -1,104 +1,124 @@
 {% macro sidebar(
-items,
-title='',
-logo_html='',
-footer_html=''
-)
-%}
-<aside x-data="{ 
-        open: $persist(true).as('sidebarOpen')
-    }"
-    x-cloak
-    class="min-h-screen bg-red-700 transition-all ease-in-out overflow-hidden text-white" 
-    :class="open ? 'w-64' : 'w-16'">
-
-  {# Logo Section #}
-  <div class="flex items-center h-16 px-5 shadow-sm">
-    <button @click="open = !open"
-      class="flex items-center rounded-md hover:bg-red-800 transition-colors">
-      <div class="w-6 h-6">
-        {% include 'menu.svg' %}
-      </div>
-    </button>
-
-    <div class="transition-all" :class="open ? 'opacity-100' : 'opacity-0 w-0'">
-      <div class="p-4 flex items-center">
-        <!-- <img src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-8"> -->
+  items,
+  title='',
+  logo_html='',
+  footer_html=''
+  )
+  %}
+  <aside x-data="{ 
+          open: $persist(true).as('sidebarOpen')
+      }"
+      x-cloak
+      class="min-h-screen bg-red-700 transition-all ease-in-out overflow-hidden text-white shrink-0" 
+      :class="open ? 'w-64' : 'w-16'">
+  
+    {# Logo Section #}
+    <div class="flex items-center h-16 px-5 shadow-sm">
+      <button @click="open = !open"
+        class="flex items-center rounded-md hover:bg-red-800 transition-colors">
+        <div class="w-6 h-6 overflow-hidden [&>svg]:block [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:fill-current [&>svg]:text-white">
+          {% include 'menu.svg' %}
+        </div>
+      </button>
+  
+      <div class="transition-all" :class="open ? 'opacity-100' : 'opacity-0 w-0'">
+        <div class="p-4 flex items-center">
+          <!-- <img src="https://hcm.mobifone.vn/images/logo.svg" alt="MobiFone" class="h-8"> -->
+        </div>
       </div>
     </div>
-  </div>
-
-  {# Navigation Menu #}
-  <nav class="py-6 px-2 space-y-1 h-full border-r border-gray-200" hx-boost="true">
-    {% for item in items %}
-    {% if item is mapping and item.children is defined and item.children is sequence and item.children is not string %}
-      {% set submenu = item %}
-      {% set submenu_items = item.children %}
-      {% set has_active_child = (submenu_items | selectattr('is_active') | list | length) > 0 %}
-      <div x-data="{ submenuOpen: {{ jsonify(has_active_child) }} }" class="space-y-1">
-        <button type="button"
-          @click="submenuOpen = !submenuOpen"
-          class="w-full flex items-center px-3 rounded-lg transition-all h-14 hover:bg-red-800"
-          :class="{{ jsonify(has_active_child) }} && open ? '' : 'bg-red-800'">
-          <div class="flex-shrink-0 w-6 h-6">
-              {% include submenu.icon %}
-          </div>
-          <div class="transition-all min-w-0 px-2 flex items-center justify-between w-full" :class="open ? 'opacity-100' : 'opacity-0'">
-            <span class="text-sm font-medium leading-tight truncate">{{ submenu.label }}</span>
-            <span class="h-4 w-4" :class="submenuOpen ? 'rotate-180' : ''">{% include 'angle-down.svg' %}</span>
-          </div>
-        </button>
-        <div x-show="open && submenuOpen" class="space-y-1 pl-4" x-cloak>
-          {% for submenu_item in submenu_items %}
-          <a href="{{ submenu_item.url }}"
-            class="flex items-center px-3 rounded-lg transition-all h-12
-                          {% if submenu_item.is_active %}bg-red-800{% else %}hover:bg-red-800{% endif %}">
+  
+    {# Navigation Menu #}
+    <nav class="py-6 px-2 space-y-1 h-full border-r border-gray-200" hx-boost="true">
+      {% for item in items %}
+      {% if item.children is defined and item.children is sequence and item.children is not string %}
+        {% set submenu = item %}
+        {% set submenu_items = item.children %}
+        {% set submenu_urls = submenu_items | map(attribute='url') | list %}
+        <div 
+          x-data='{
+            submenuOpen: false,
+            activeSubmenu: false,
+            init() {
+              this.activeSubmenu = {{ jsonify(submenu_urls) }}.find(url => window.location.pathname == url);
+              this.submenuOpen = Boolean(this.activeSubmenu);
+            }
+          }'
+          class="space-y-1">
+          <button type="button"
+            @click="if (!open) {
+               open = true;
+               $data.submenuOpen = true;
+              } else {
+                $data.submenuOpen = !$data.submenuOpen;
+              }"
+            class="w-full flex items-center px-3 rounded-lg transition-all h-14 hover:bg-red-800"
+            :class="(!open || !submenuOpen) && activeSubmenu ? 'bg-red-800' : ''">
             <div class="flex-shrink-0 w-6 h-6">
-              {% include submenu_item.icon %}
+                {% include submenu.icon %}
             </div>
-            <div class="transition-all min-w-0 px-2" :class="open ? 'opacity-100' : 'opacity-0'">
-              <div class="flex items-center">
-                <span class="text-sm font-medium leading-tight truncate">{{ submenu_item.label }}</span>
-                {% if submenu_item.badge %}
-                <span
-                  class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
-                  {{ submenu_item.badge }}
-                </span>
+            <div class="transition-all min-w-0 px-2 flex items-center justify-between w-full" :class="open ? 'opacity-100' : 'opacity-0'">
+              <span class="text-sm font-medium leading-tight truncate">{{ submenu.label }}</span>
+              <span class="h-4 w-4" :class="submenuOpen ? 'rotate-180' : ''">{% include 'angle-down.svg' %}</span>
+            </div>
+          </button>
+          <div x-show="open && submenuOpen" class="space-y-1 pl-4" x-cloak>
+            {% for submenu_item in submenu_items %}
+            
+            <a href="{{ submenu_item.url }}"
+              class="flex items-center px-3 rounded-lg transition-all h-12"
+              :class="activeSubmenu == '{{ submenu_item.url }}' ? 'bg-red-800' : 'hover:bg-red-800'">
+              {% set icon = get_attribute(submenu_item, 'icon') %}
+              {% if icon %}
+              <div class="flex-shrink-0 w-6 h-6">
+                  {% include icon %}
+                </div>
+              {% endif %}
+              <div class="transition-all min-w-0 px-2" :class="open ? 'opacity-100' : 'opacity-0'">
+                <div class="flex items-center">
+                  <span class="text-sm font-medium leading-tight truncate">{{ submenu_item.label }}</span>
+                  {% if submenu_item.badge %}
+                  <span
+                    class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
+                    {{ submenu_item.badge }}
+                  </span>
+                  {% endif %}
+                </div>
+                {% if submenu_item.description %}
+                  <p class="text-xs text-gray-500 leading-tight mt-1.5 truncate">{{ submenu_item.description }}</p>
                 {% endif %}
               </div>
-              {% if submenu_item.description %}
-                <p class="text-xs text-gray-500 leading-tight mt-1.5 truncate">{{ submenu_item.description }}</p>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <a href="{{ item.url }}"
+          x-data="{
+            isCurrentItem: window.location.pathname.startsWith('{{item.url}}'),
+          }"
+          class="flex items-center px-3 rounded-lg transition-all h-14"
+          :class="isCurrentItem ? 'bg-red-800' : 'hover:bg-red-800'">
+          <div class="flex-shrink-0 w-6 h-6">
+            {% include item.icon %}
+          </div>
+          <div class="transition-all min-w-0 px-2" :class="open ? 'opacity-100' : 'opacity-0'">
+            <div class="flex items-center">
+              <span class="text-sm font-medium leading-tight truncate">{{ item.label }}</span>
+              {% if item.badge %}
+              <span
+                class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
+                {{ item.badge }}
+              </span>
               {% endif %}
             </div>
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-    {% else %}
-      {% set is_active = item.is_active %}
-      <a href="{{ item.url }}"
-        class="flex items-center px-3 rounded-lg transition-all h-14
-                      {% if is_active %}bg-red-800{% else %}hover:bg-red-800{% endif %}">
-        <div class="flex-shrink-0 w-6 h-6">
-          {% include item.icon %}
-        </div>
-        <div class="transition-all min-w-0 px-2" :class="open ? 'opacity-100' : 'opacity-0'">
-          <div class="flex items-center">
-            <span class="text-sm font-medium leading-tight truncate">{{ item.label }}</span>
-            {% if item.badge %}
-            <span
-              class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
-              {{ item.badge }}
-            </span>
+            {% if item.description %}
+              <p class="text-xs text-gray-500 leading-tight mt-1.5 truncate">{{ item.description }}</p>
             {% endif %}
           </div>
-          {% if item.description %}
-            <p class="text-xs text-gray-500 leading-tight mt-1.5 truncate">{{ item.description }}</p>
-          {% endif %}
-        </div>
-      </a>
-    {% endif %}
-    {% endfor %}
-  </nav>
-</aside>
-{% endmacro %}
+        </a>
+      {% endif %}
+      {% endfor %}
+    </nav>
+  </aside>
+  {% endmacro %}
