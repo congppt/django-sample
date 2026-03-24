@@ -46,12 +46,14 @@
       class="h-full relative {{ class }}"
       x-data="{
         open: false,
+        panelPlaced: false,
         disabled: {{ jsonify(disabled) }},
         variant: {{ jsonify(variant) }},
 
         viewMode: 'day',
         coords: { top: 0, left: 0, width: 0 },
         outsideClickListener: null,
+        repositionListener: null,
         panelPlacement: 'bottom',
 
         today: new Date(),
@@ -382,6 +384,7 @@
           this.committedDisplayValue = '';
           this.visibleValue = '';
           this.open = false;
+          this.panelPlaced = false;
           this.stopOutsideClickListener();
           this.viewMode = 'day';
           this.$nextTick(() => {
@@ -530,15 +533,8 @@
         openPicker() {
           if (this.disabled) return;
           if (this.open) return;
-          if (this.$refs && this.$refs.trigger) {
-            const triggerRect = this.$refs.trigger.getBoundingClientRect();
-            const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
-            const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-            this.coords = {
-              top: triggerRect.bottom + scrollY + 6,
-              left: triggerRect.left + scrollX,
-            };
-          }
+          this.panelPlaced = false;
+          this.coords = { top: 0, left: 0, width: 0 };
           this.open = true;
           this.viewMode = 'day';
 
@@ -567,9 +563,12 @@
 
           this.$nextTick(() => {
             requestAnimationFrame(() => {
-              this.panelPlacement = this.getPreferredPlacement();
-              this.reposition();
-              this.startOutsideClickListener();
+              requestAnimationFrame(() => {
+                this.panelPlacement = this.getPreferredPlacement();
+                this.reposition();
+                this.panelPlaced = true;
+                this.startOutsideClickListener();
+              });
             });
           });
         },
@@ -601,6 +600,7 @@
           this.committedDisplayValue = this.formatDraftDisplay();
           this.visibleValue = this.committedDisplayValue;
           this.open = false;
+          this.panelPlaced = false;
           this.stopOutsideClickListener();
           this.viewMode = 'day';
 
@@ -624,6 +624,7 @@
           this.buildCalendar();
           this.visibleValue = this.committedDisplayValue;
           this.open = false;
+          this.panelPlaced = false;
           this.stopOutsideClickListener();
           this.viewMode = 'day';
         },
@@ -670,7 +671,7 @@
             top = triggerRect.top - panelRect.height - gap;
           }
 
-          this.placement = placement;
+          this.panelPlacement = placement;
           this.coords = {
             top: top + scrollY,
             left: left + scrollX,
@@ -707,9 +708,21 @@
           };
           document.addEventListener('mousedown', this.outsideClickListener, true);
           document.addEventListener('touchstart', this.outsideClickListener, true);
+
+          this.repositionListener = () => {
+            if (!this.open) return;
+            this.reposition();
+          };
+          window.addEventListener('scroll', this.repositionListener, { capture: true, passive: true });
+          window.addEventListener('resize', this.repositionListener, { passive: true });
         },
 
         stopOutsideClickListener() {
+          if (this.repositionListener) {
+            window.removeEventListener('scroll', this.repositionListener, { capture: true, passive: true });
+            window.removeEventListener('resize', this.repositionListener, { passive: true });
+            this.repositionListener = null;
+          }
           if (!this.outsideClickListener) return;
           document.removeEventListener('mousedown', this.outsideClickListener, true);
           document.removeEventListener('touchstart', this.outsideClickListener, true);
@@ -778,17 +791,13 @@
             x-show="open"
             x-cloak
             x-ref="panel"
-            x-transition:enter="transition-opacity ease-out duration-150"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition-opacity ease-in duration-100"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            class="absolute z-500 min-w-fit rounded-lg border border-slate-200 bg-white shadow-lg"
-            :style="{
-              inset: '0px auto auto 0px',
-              transform: 'translate(' + coords.left + 'px, ' + coords.top + 'px)'
-            }"
+            class="absolute z-500 min-w-fit rounded-lg border border-slate-200 bg-white shadow-lg transition-opacity duration-150 ease-out"
+            :class="(open && !panelPlaced ? 'invisible pointer-events-none ' : '') + (open && panelPlaced ? 'opacity-100' : 'opacity-0')"
+            :style="
+              'inset:0 auto auto 0;'
+              + 'transform:translate(' + coords.left + 'px,' + coords.top + 'px);'
+              + (coords.width > 0 ? 'width:' + coords.width + 'px;' : '')
+            "
             @click.stop
           >
               <div class="p-3">
