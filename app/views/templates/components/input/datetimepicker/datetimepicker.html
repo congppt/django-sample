@@ -31,7 +31,7 @@
 
   {# Read minute step from extra_attributes; don't render it as an HTML attribute. #}
   {% set minute_step = get_attribute(extra_attributes, 'minute_step', 5) %}
-  {% set clearable = get_attribute(extra_attributes, 'clearable', false) %}
+  {% set clearable = get_attribute(extra_attributes, 'clearable', true) %}
 
   {% call wrapper(
     label=label,
