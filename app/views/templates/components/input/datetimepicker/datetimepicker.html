@@ -535,6 +535,7 @@
           if (this.open) return;
           this.panelPlaced = false;
           this.coords = { top: 0, left: 0, width: 0 };
+          this.panelPlacement = 'bottom';
           this.open = true;
           this.viewMode = 'day';
 
@@ -564,7 +565,6 @@
           this.$nextTick(() => {
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
-                this.panelPlacement = this.getPreferredPlacement();
                 this.reposition();
                 this.panelPlaced = true;
                 this.startOutsideClickListener();
@@ -677,20 +677,6 @@
             left: left + scrollX,
             width,
           };
-        },
-
-        getPreferredPlacement() {
-          if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return 'bottom';
-          const triggerRect = this.$refs.trigger.getBoundingClientRect();
-          const panelRect = this.$refs.panel.getBoundingClientRect();
-          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-          const margin = 12;
-          const gap = 6;
-          const spaceAbove = triggerRect.top - margin;
-          const spaceBelow = viewportHeight - triggerRect.bottom - margin;
-          const needsTop = spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow;
-          if (needsTop) return 'top';
-          return 'bottom';
         },
 
         startOutsideClickListener() {

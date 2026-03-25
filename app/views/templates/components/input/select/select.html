@@ -38,9 +38,10 @@
       params: {},
       multiple: {{ jsonify(multiple) }},
       open: false,
+      panelPlaced: false,
       placement: 'bottom',
       panelPlacement: 'bottom',
-      coords: { top: 0, left: 0, minWidth: 0 },
+      coords: { top: 0, left: 0, width: 0, minWidth: 0 },
       margin: 12,
       repositionListener: null,
       outsideClickListener: null,
@@ -182,7 +183,6 @@
 
         const triggerRect = this.$refs.trigger.getBoundingClientRect();
         const panelEl = this.$refs.panel;
-        const panelRect = panelEl.getBoundingClientRect();
         const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
         const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
         const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
@@ -190,23 +190,20 @@
         const margin = this.margin || 12;
         const gap = 6;
 
-        const width = panelRect.width || panelEl.scrollWidth || triggerRect.width;
+        const panelRect = panelEl.getBoundingClientRect();
+        const naturalWidth = panelRect.width || panelEl.scrollWidth || triggerRect.width;
+        const width = Math.max(0, Math.min(naturalWidth, viewportWidth - margin * 2));
         const minLeft = margin;
         const maxLeft = viewportWidth - width - margin;
         let left = triggerRect.left;
         if (left > maxLeft) {
           left = triggerRect.right - width;
         }
-        if (maxLeft < minLeft) {
-          left = minLeft;
-        } else {
-          if (left < minLeft) left = minLeft;
-          if (left > maxLeft) left = maxLeft;
-        }
+        if (left < minLeft) left = minLeft;
+        if (left > maxLeft) left = maxLeft;
 
         const spaceAbove = triggerRect.top - margin;
         const spaceBelow = viewportHeight - triggerRect.bottom - margin;
-        const maxAvailable = Math.max(0, (this.panelPlacement === 'bottom' ? spaceBelow : spaceAbove) - gap);
         let placement = this.panelPlacement;
         if (placement === 'bottom' && spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow) {
           placement = 'top';
@@ -220,34 +217,20 @@
           top = triggerRect.top - panelRect.height - gap;
         }
 
+        this.panelPlacement = placement;
         this.placement = placement;
-        this.coords = { top: top + scrollY, left: left + scrollX, minWidth: triggerRect.width };
-      },
-      getPreferredPlacement() {
-        if (!this.$refs || !this.$refs.trigger || !this.$refs.panel) return 'bottom';
-        const triggerRect = this.$refs.trigger.getBoundingClientRect();
-        const panelRect = this.$refs.panel.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-        const margin = this.margin || 12;
-        const gap = 6;
-        const spaceAbove = triggerRect.top - margin;
-        const spaceBelow = viewportHeight - triggerRect.bottom - margin;
-        const needsTop = spaceBelow < panelRect.height + gap && spaceAbove > spaceBelow;
-        if (needsTop) return 'top';
-        return 'bottom';
+        this.coords = {
+          top: top + scrollY,
+          left: left + scrollX,
+          width,
+          minWidth: triggerRect.width,
+        };
       },
       openDropdown() {
         if (this.open) return;
-        const triggerRect = this.$refs?.trigger?.getBoundingClientRect?.();
-        if (triggerRect) {
-          const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
-          const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-          this.coords = {
-            top: triggerRect.bottom + scrollY + 6,
-            left: triggerRect.left + scrollX,
-            minWidth: triggerRect.width
-          };
-        }
+        this.panelPlaced = false;
+        this.coords = { top: 0, left: 0, width: 0, minWidth: 0 };
+        this.panelPlacement = 'bottom';
         this.isFiltering = false;
         this.searchQuery = this.multiple ? '' : this.selectedSearchLabel();
         this.open = true;
@@ -255,15 +238,18 @@
         this.fetchOptions();
         this.$nextTick(() => {
           requestAnimationFrame(() => {
-            this.panelPlacement = this.getPreferredPlacement();
-            this.reposition();
-            this.startOutsideClickListener();
-            this.$refs.searchInput?.focus();
+            requestAnimationFrame(() => {
+              this.reposition();
+              this.panelPlaced = true;
+              this.startOutsideClickListener();
+              this.$refs.searchInput?.focus();
+            });
           });
         });
       },
       closeDropdown() {
         this.open = false;
+        this.panelPlaced = false;
         this.isFiltering = false;
         this.highlightedIndex = -1;
         this.searchQuery = '';
@@ -372,8 +358,20 @@
         };
         document.addEventListener('mousedown', this.outsideClickListener, true);
         document.addEventListener('touchstart', this.outsideClickListener, true);
+
+        this.repositionListener = () => {
+          if (!this.open) return;
+          this.reposition();
+        };
+        window.addEventListener('scroll', this.repositionListener, { capture: true, passive: true });
+        window.addEventListener('resize', this.repositionListener, { passive: true });
       },
       stopOutsideClickListener() {
+        if (this.repositionListener) {
+          window.removeEventListener('scroll', this.repositionListener, { capture: true, passive: true });
+          window.removeEventListener('resize', this.repositionListener, { passive: true });
+          this.repositionListener = null;
+        }
         if (!this.outsideClickListener) return;
         document.removeEventListener('mousedown', this.outsideClickListener, true);
         document.removeEventListener('touchstart', this.outsideClickListener, true);
@@ -383,11 +381,6 @@
         this.fetchOptions();
         this.selected = this.initialSelected;
         this.normalizeSelected();
-        this.repositionListener = () => {
-          if (this.open) this.reposition();
-        };
-        window.addEventListener('resize', this.repositionListener);
-        window.addEventListener('scroll', this.repositionListener, true);
         if (Array.isArray(this.reloadEvents) && this.reloadEvents.length) {
           this.reloadListener = (event) => {
             // Flatter payload form (Alpine `$dispatch`):
@@ -409,10 +402,6 @@
         }
       },
       destroy() {
-        if (this.repositionListener) {
-          window.removeEventListener('resize', this.repositionListener);
-          window.removeEventListener('scroll', this.repositionListener, true);
-        }
         this.stopOutsideClickListener();
         if (this.reloadListener) {
           this.reloadEvents.forEach(eventName => {
@@ -537,22 +526,19 @@
         x-show="open"
         x-ref="panel"
         x-cloak
-        x-transition:enter="transition-opacity ease-out duration-150"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition-opacity ease-in duration-100"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
         :id="$id('input') + '-listbox'"
         role="listbox"
         :aria-labelledby="$id('input')"
-        class="absolute z-500 max-w-80 max-h-80 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-        :class="[placement === 'top' ? 'origin-bottom' : 'origin-top']"
-        :style="{
-          inset: '0px auto auto 0px',
-          minWidth: coords.minWidth + 'px',
-          transform: 'translate(' + coords.left + 'px, ' + coords.top + 'px)'
-        }"
+        class="absolute z-500 max-h-80 max-w-80 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg transition-opacity duration-150 ease-out"
+        :class="[
+          placement === 'top' ? 'origin-bottom' : 'origin-top',
+          (open && !panelPlaced ? 'invisible pointer-events-none ' : '') + (open && panelPlaced ? 'opacity-100' : 'opacity-0')
+        ]"
+        :style="
+          'inset:0 auto auto 0;min-width:' + coords.minWidth + 'px;'
+          + 'transform:translate(' + coords.left + 'px,' + coords.top + 'px);'
+          + (coords.width > 0 ? 'width:' + coords.width + 'px;' : '')
+        "
       >
         <template x-if="!isLoading && filteredOptions.length === 0">
           <div class="px-3 py-2 text-xs text-slate-500">
