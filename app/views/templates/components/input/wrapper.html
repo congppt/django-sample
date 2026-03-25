@@ -44,14 +44,16 @@
   </label>
   {% endif %}
   <div 
-    class="h-10 ring-1 ring-solid rounded-md" 
+    class="min-h-10 ring-1 ring-solid rounded-md flex items-stretch" 
     :class="disabled ? 
     'bg-slate-200 text-slate-400 ring-slate-200' : (
         errorMessage ? 'ring-red-600' : 'ring-slate-300')"
   >
-    {{
-        caller()
-    }}
+    <div class="flex-1">
+      {{
+          caller()
+      }}
+    </div>
   </div>
   
   <template x-if="errorMessage || hint">
