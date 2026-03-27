@@ -32,6 +32,7 @@
   {# Read minute step from extra_attributes; don't render it as an HTML attribute. #}
   {% set minute_step = get_attribute(extra_attributes, 'minute_step', 5) %}
   {% set clearable = get_attribute(extra_attributes, 'clearable', true) %}
+  {% set display_format_raw = get_attribute(extra_attributes, 'format', none) %}
   {% set fixed_year_raw = get_attribute(extra_attributes, 'year', none) %}
   {% set fixed_month_raw = get_attribute(extra_attributes, 'month', none) %}
   {% set fixed_day_raw = get_attribute(extra_attributes, 'day', none) %}
@@ -52,6 +53,7 @@
   {% set can_select_day = (not has_fixed_day) %}
   {% set can_select_hour = (not has_fixed_hour) %}
   {% set can_select_minute = (not has_fixed_minute) %}
+  {% set display_format = none if display_format_raw in [none, ''] else display_format_raw %}
 
   {% call wrapper(
     label=label,
@@ -69,6 +71,7 @@
         panelPlaced: false,
         disabled: {{ jsonify(disabled) }},
         variant: {{ jsonify(variant) }},
+        displayFormat: {{ jsonify(display_format or '') }},
 
         viewMode: 'day',
         coords: { top: 0, left: 0, width: 0 },
@@ -472,7 +475,54 @@
           if (this.open) this.visibleValue = this.formatDraftDisplay();
         },
 
+        formatWithCustomPattern() {
+          const fmt = this.displayFormat;
+          if (!fmt || typeof fmt !== 'string') return '';
+
+          const pad2 = (n) => String(n).padStart(2, '0');
+          const dt = this.draftDate;
+          const hour = this.draftHour;
+          const minute = this.draftMinute;
+
+          const hasDate = dt instanceof Date;
+          const hasTime = (hour !== null && hour !== undefined && minute !== null && minute !== undefined);
+
+          if (!hasDate && !hasTime) return '';
+
+          let year = '';
+          let month = '';
+          let day = '';
+          if (hasDate) {
+            year = String(dt.getFullYear());
+            month = pad2(dt.getMonth() + 1);
+            day = pad2(dt.getDate());
+          }
+
+          let hStr = '';
+          let mStr = '';
+          if (hasTime) {
+            hStr = pad2(hour);
+            mStr = pad2(minute);
+          }
+
+          let out = fmt;
+          if (hasDate) {
+            out = out.replace(/YYYY/g, year);
+            out = out.replace(/YY/g, year.slice(-2));
+            out = out.replace(/MM/g, month);
+            out = out.replace(/DD/g, day);
+          }
+          if (hasTime) {
+            out = out.replace(/HH/g, hStr);
+            out = out.replace(/mm/g, mStr);
+          }
+          return out;
+        },
+
         formatDraftDisplay() {
+          if (this.displayFormat) {
+            return this.formatWithCustomPattern();
+          }
           if (this.variant === 'time') {
             return this.formatTimeDisplay(this.draftHour, this.draftMinute);
           }
@@ -846,14 +896,17 @@
           :id="$id('input')"
           x-model="visibleValue"
           placeholder="{{ input_placeholder }}"
-          {% if variant == 'time' %}
-            x-mask="99:99"
-          {% elif variant == 'datetime' %}
-            x-mask="99/99/9999 99:99"
-          {% else %}
-            x-mask="99/99/9999"
+          {% if not display_format %}
+            {% if variant == 'time' %}
+              x-mask="99:99"
+            {% elif variant == 'datetime' %}
+              x-mask="99/99/9999 99:99"
+            {% else %}
+              x-mask="99/99/9999"
+            {% endif %}
           {% endif %}
           :disabled="disabled"
+          :readonly="!!displayFormat"
           @focus="openPicker()"
           @click="openPicker()"
           @change="onInputChange()"
