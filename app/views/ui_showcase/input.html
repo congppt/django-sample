@@ -190,4 +190,41 @@
       </div>
     </div>
   </div>
+
+  <div class="grid gap-10 lg:grid-cols-2">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Date picker (month + year only)</h3>
+      <p class="mt-1 text-xs text-slate-600">Fix `day=1`, let users choose only month and year.</p>
+      <div class="mt-4">
+        {{ datetimepicker(
+          name='demo_date_picker_month_year_only',
+          variant='date',
+          label='Tháng áp dụng',
+          hint='Selectable: year + month. ISO output is still full date.',
+          value='2026-03-01',
+          extra_attributes={
+            'day': 1
+          }
+        ) }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-semibold text-slate-900">Date picker (year only)</h3>
+      <p class="mt-1 text-xs text-slate-600">Fix `month=1` and `day=1`, let users choose only year.</p>
+      <div class="mt-4">
+        {{ datetimepicker(
+          name='demo_date_picker_year_only',
+          variant='date',
+          label='Năm',
+          hint='Selectable: year only. ISO output stays YYYY-01-01.',
+          value='2026-01-01',
+          extra_attributes={
+            'month': 1,
+            'day': 1
+          }
+        ) }}
+      </div>
+    </div>
+  </div>
 </section>
