@@ -14,7 +14,7 @@
   extra_attributes={}
 ) %}
 {% set tag = 'a' if href else 'button' %}
-{% set base_classes = 'inline-flex items-center justify-center rounded-lg h-9 transition shrink-0' %}
+{% set base_classes = 'inline-flex items-center justify-center rounded-lg h-9 transition shrink-0 cursor-pointer' %}
 {% set text = (text or '')|trim %}
 {% if text %}
 {% set title_classes = 'gap-2 px-4 text-sm font-medium' %}

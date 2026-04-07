@@ -11,6 +11,8 @@
   required=false,
   disabled=false,
   value='',
+  min=none,
+  max=none,
   error_message='',
   placeholder='',
   tooltip_content=none,
@@ -55,6 +57,13 @@
   {% set can_select_minute = (not has_fixed_minute) %}
   {% set display_format = none if display_format_raw in [none, ''] else display_format_raw %}
 
+  {# Bounds:
+     - hardMin/hardMax: literal ISO strings (hard clamp)
+     - extra_attributes min/max: names of properties on an ancestor Alpine `x-data` (soft clamp; often derived from other inputs)
+     Invalid/missing parent values → getter returns null (unbounded on that side). #}
+  {% set min_key_name = extra_attributes.pop('min', none) %}
+  {% set max_key_name = extra_attributes.pop('max', none) %}
+
   {% call wrapper(
     label=label,
     hint=hint,
@@ -70,6 +79,7 @@
         open: false,
         panelPlaced: false,
         disabled: {{ jsonify(disabled) }},
+        clearable: {{ jsonify(clearable) }},
         variant: {{ jsonify(variant) }},
         displayFormat: {{ jsonify(display_format or '') }},
 
@@ -115,6 +125,231 @@
         fixedHour: {{ jsonify(fixed_hour) }},
         fixedMinute: {{ jsonify(fixed_minute) }},
 
+        hardMinRaw: {{ jsonify(min) }},
+        hardMaxRaw: {{ jsonify(max) }},
+
+        minKey: {{ jsonify(min_key_name or '') }},
+        maxKey: {{ jsonify(max_key_name or '') }},
+
+        _readMinRaw() {
+          {% if min_key_name %}
+          try { return (typeof {{ min_key_name }} !== 'undefined') ? {{ min_key_name }} : null; } catch (e) { return null; }
+          {% else %}
+          return null;
+          {% endif %}
+        },
+
+        _readMaxRaw() {
+          {% if max_key_name %}
+          try { return (typeof {{ max_key_name }} !== 'undefined') ? {{ max_key_name }} : null; } catch (e) { return null; }
+          {% else %}
+          return null;
+          {% endif %}
+        },
+
+        _parseBoundRaw(raw) {
+          if (!raw) return null;
+          const s = String(raw);
+          if (this.variant === 'time') return this._parseIsoTimeMinutes(s);
+          if (this.variant === 'datetime') return this._parseIsoDateTimeMs(s);
+          // date
+          const d = this._parseIsoDateOnly(s);
+          return d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : null;
+        },
+
+        _parseIsoDateOnly(iso) {
+          if (!iso || typeof iso !== 'string') return null;
+          const m = iso.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (!m) return null;
+          const y = Number(m[1]);
+          const mo = Number(m[2]) - 1;
+          const d = Number(m[3]);
+          const dt = new Date(y, mo, d);
+          if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
+          return dt;
+        },
+
+        _parseIsoTimeMinutes(iso) {
+          if (!iso || typeof iso !== 'string') return null;
+          const m = iso.trim().match(/^(\d{1,2}):(\d{2})/);
+          if (!m) return null;
+          const hh = Number(m[1]);
+          const mm = Number(m[2]);
+          if (Number.isNaN(hh) || Number.isNaN(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+          return hh * 60 + mm;
+        },
+
+        _parseIsoDateTimeMs(iso) {
+          if (!iso || typeof iso !== 'string') return null;
+          const s = iso.trim();
+          const dm = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+          if (!dm) return null;
+          const y = Number(dm[1]);
+          const mo = Number(dm[2]) - 1;
+          const d = Number(dm[3]);
+          const hh = dm[4] !== undefined ? Number(dm[4]) : 0;
+          const mm = dm[5] !== undefined ? Number(dm[5]) : 0;
+          if ([y, mo, d, hh, mm].some(Number.isNaN)) return null;
+          if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+          const dt = new Date(y, mo, d, hh, mm, 0, 0);
+          if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
+          return dt.getTime();
+        },
+
+        _boundMinValue() {
+          const hardV = this._parseBoundRaw(this.hardMinRaw);
+          const softV = this._parseBoundRaw(this._readMinRaw());
+          if (hardV === null && softV === null) return null;
+          if (hardV === null) return softV;
+          if (softV === null) return hardV;
+          return Math.max(hardV, softV);
+        },
+
+        _boundMaxValue() {
+          const hardV = this._parseBoundRaw(this.hardMaxRaw);
+          const softV = this._parseBoundRaw(this._readMaxRaw());
+          if (hardV === null && softV === null) return null;
+          if (hardV === null) return softV;
+          if (softV === null) return hardV;
+          return Math.min(hardV, softV);
+        },
+
+        isMonthOutOfRange(year, monthIndex) {
+          if (this.disabled) return true;
+          if (this.variant !== 'date' && this.variant !== 'datetime') return false;
+          if (year === null || year === undefined || monthIndex === null || monthIndex === undefined) return false;
+          const y = Number(year);
+          const m = Number(monthIndex);
+          if (Number.isNaN(y) || Number.isNaN(m)) return false;
+          const minV = this._boundMinValue();
+          const maxV = this._boundMaxValue();
+          if (minV === null && maxV === null) return false;
+          if (this.variant === 'date') {
+            const firstDayStart = new Date(y, m, 1, 0, 0, 0, 0).getTime();
+            const lastDayStart = new Date(y, m + 1, 0, 0, 0, 0, 0).getTime();
+            if (minV !== null && lastDayStart < minV) return true;
+            if (maxV !== null && firstDayStart > maxV) return true;
+            return false;
+          }
+          // datetime
+          const monthStart = new Date(y, m, 1, 0, 0, 0, 0).getTime();
+          const monthEnd = new Date(y, m + 1, 0, 23, 59, 59, 999).getTime();
+          if (minV !== null && monthEnd < minV) return true;
+          if (maxV !== null && monthStart > maxV) return true;
+          return false;
+        },
+
+        isYearOutOfRange(year) {
+          if (this.disabled) return true;
+          if (this.variant !== 'date' && this.variant !== 'datetime') return false;
+          if (year === null || year === undefined) return false;
+          const y = Number(year);
+          if (Number.isNaN(y)) return false;
+          const minV = this._boundMinValue();
+          const maxV = this._boundMaxValue();
+          if (minV === null && maxV === null) return false;
+          if (this.variant === 'date') {
+            const firstDayStart = new Date(y, 0, 1, 0, 0, 0, 0).getTime();
+            const lastDayStart = new Date(y, 11, 31, 0, 0, 0, 0).getTime();
+            if (minV !== null && lastDayStart < minV) return true;
+            if (maxV !== null && firstDayStart > maxV) return true;
+            return false;
+          }
+          // datetime
+          const yearStart = new Date(y, 0, 1, 0, 0, 0, 0).getTime();
+          const yearEnd = new Date(y, 11, 31, 23, 59, 59, 999).getTime();
+          if (minV !== null && yearEnd < minV) return true;
+          if (maxV !== null && yearStart > maxV) return true;
+          return false;
+        },
+
+        isDecadeOutOfRange(decadeStartYear) {
+          if (this.disabled) return true;
+          if (this.variant !== 'date' && this.variant !== 'datetime') return false;
+          const start = Number(decadeStartYear);
+          if (Number.isNaN(start)) return false;
+          for (let y = start; y < start + 10; y++) {
+            if (!this.isYearOutOfRange(y)) return false;
+          }
+          return true;
+        },
+
+        isDateOutOfRange(dt) {
+          if (!dt || (this.variant !== 'date' && this.variant !== 'datetime')) return false;
+          const dayStart = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0).getTime();
+          const dayEnd = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 23, 59, 59, 999).getTime();
+          const minV = this._boundMinValue();
+          const maxV = this._boundMaxValue();
+          if (this.variant === 'date') {
+            if (minV !== null && dayStart < minV) return true;
+            if (maxV !== null && dayStart > maxV) return true;
+            return false;
+          }
+          // datetime: disable whole day if no time on that day can satisfy the range
+          if (minV !== null && dayEnd < minV) return true;
+          if (maxV !== null && dayStart > maxV) return true;
+          return false;
+        },
+
+        clampLocalDate(dt) {
+          if (!dt) return dt;
+          if (this.variant === 'time') return dt;
+          let t = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+          const minV = this._boundMinValue();
+          const maxV = this._boundMaxValue();
+          if (this.variant === 'date') {
+            if (minV !== null && t.getTime() < minV) t = new Date(minV);
+            if (maxV !== null && t.getTime() > maxV) t = new Date(maxV);
+            return t;
+          }
+          // datetime clamps happen on the combined date+time.
+          return t;
+        },
+
+        _clampDraftTimeToBounds() {
+          if (this.variant !== 'time') return;
+          const minV = this._boundMinValue();
+          const maxV = this._boundMaxValue();
+          if (minV === null && maxV === null) return;
+          if (this.draftHour === null || this.draftMinute === null) return;
+          let v = this.draftHour * 60 + this.draftMinute;
+          if (minV !== null && v < minV) v = minV;
+          if (maxV !== null && v > maxV) v = maxV;
+          const hh = Math.floor(v / 60);
+          const mm = v % 60;
+          this.draftHour = hh;
+          this.draftMinute = mm - (mm % this.minuteStep);
+        },
+
+        _clampDraftDateTimeToBounds() {
+          if (this.variant !== 'datetime') return;
+          const minV = this._boundMinValue();
+          const maxV = this._boundMaxValue();
+          if (minV === null && maxV === null) return;
+          if (!this.draftDate || this.draftHour === null || this.draftMinute === null) return;
+          let v = new Date(this.draftDate.getFullYear(), this.draftDate.getMonth(), this.draftDate.getDate(), this.draftHour, this.draftMinute, 0, 0).getTime();
+          if (minV !== null && v < minV) v = minV;
+          if (maxV !== null && v > maxV) v = maxV;
+          const clamped = new Date(v);
+          this.draftDate = new Date(clamped.getFullYear(), clamped.getMonth(), clamped.getDate());
+          this.draftDateDisplay = this.formatDateDisplay(this.draftDate);
+          this.visibleYear = this.draftDate.getFullYear();
+          this.visibleMonth = this.draftDate.getMonth();
+          this.draftHour = clamped.getHours();
+          this.draftMinute = clamped.getMinutes() - (clamped.getMinutes() % this.minuteStep);
+        },
+
+        _attachBoundsWatchers() {
+          if (this.variant !== 'date' && this.variant !== 'datetime' && this.variant !== 'time') return;
+          // When the parent-bound ISO strings change, rebuild + clamp immediately.
+          {% if min_key_name %}
+          this.$watch(() => {{ min_key_name }}, () => { this.applySelectionConstraints(); this.buildCalendar(); });
+          {% endif %}
+          {% if max_key_name %}
+          this.$watch(() => {{ max_key_name }}, () => { this.applySelectionConstraints(); this.buildCalendar(); });
+          {% endif %}
+        },
+
         init() {
           this.minuteOptions = Array.from({ length: 60 }, (_, i) => i).filter(m => m % this.minuteStep === 0);
           this._loadDraftFromIso(this.committedIso);
@@ -124,6 +359,7 @@
           this.buildCalendar();
           this.buildYearOptions();
           this.viewMode = this.getInitialViewMode();
+          this._attachBoundsWatchers();
         },
 
         getInitialViewMode() {
@@ -163,6 +399,17 @@
             this.draftDateDisplay = this.formatDateDisplay(constrainedDate);
             this.visibleYear = constrainedDate.getFullYear();
             this.visibleMonth = constrainedDate.getMonth();
+
+            if (this.draftDate) {
+              const c = this.clampLocalDate(this.draftDate);
+              const d0 = new Date(this.draftDate.getFullYear(), this.draftDate.getMonth(), this.draftDate.getDate());
+              if (c.getTime() !== d0.getTime()) {
+                this.draftDate = c;
+                this.draftDateDisplay = this.formatDateDisplay(c);
+                this.visibleYear = c.getFullYear();
+                this.visibleMonth = c.getMonth();
+              }
+            }
           }
 
           if (this.variant === 'time' || this.variant === 'datetime') {
@@ -181,6 +428,13 @@
             minute = Math.max(0, Math.min(59, minute));
             this.draftHour = hour;
             this.draftMinute = minute;
+          }
+
+          if (this.variant === 'time') {
+            this._clampDraftTimeToBounds();
+          }
+          if (this.variant === 'datetime') {
+            this._clampDraftDateTimeToBounds();
           }
 
           if (this.variant === 'date' || this.variant === 'datetime') this.buildCalendar();
@@ -270,6 +524,7 @@
                 monthIndex: this.visibleMonth,
                 isSelected: false,
                 isToday: inMonth && this.sameLocalDate(dt, this.today),
+                outOfRange: inMonth && dt && this.isDateOutOfRange(dt),
               });
             }
             this.calendarCells = cells;
@@ -293,6 +548,7 @@
               monthIndex: this.visibleMonth,
               isSelected: inMonth && this.sameLocalDate(dt, this.draftDate),
               isToday: inMonth && this.sameLocalDate(dt, this.today),
+              outOfRange: inMonth && dt && this.isDateOutOfRange(dt),
             });
           }
 
@@ -301,7 +557,8 @@
 
         setDraftDate(day, monthIndex, year) {
           if (day === '' || day === null || day === undefined) return;
-          const dt = new Date(year, monthIndex, day);
+          let dt = new Date(year, monthIndex, day);
+          dt = this.clampLocalDate(dt);
           this.draftDate = dt;
           this.draftDateDisplay = this.formatDateDisplay(dt);
           this.visibleYear = dt.getFullYear();
@@ -318,6 +575,11 @@
         },
 
         prevMonth() {
+          if (this.variant === 'date' || this.variant === 'datetime') {
+            const targetYear = (this.visibleMonth === 0) ? (this.visibleYear - 1) : this.visibleYear;
+            const targetMonth = (this.visibleMonth === 0) ? 11 : (this.visibleMonth - 1);
+            if (this.isMonthOutOfRange(targetYear, targetMonth)) return;
+          }
           if (this.visibleMonth === 0) {
             this.visibleMonth = 11;
             this.visibleYear -= 1;
@@ -328,6 +590,11 @@
         },
 
         nextMonth() {
+          if (this.variant === 'date' || this.variant === 'datetime') {
+            const targetYear = (this.visibleMonth === 11) ? (this.visibleYear + 1) : this.visibleYear;
+            const targetMonth = (this.visibleMonth === 11) ? 0 : (this.visibleMonth + 1);
+            if (this.isMonthOutOfRange(targetYear, targetMonth)) return;
+          }
           if (this.visibleMonth === 11) {
             this.visibleMonth = 0;
             this.visibleYear += 1;
@@ -400,7 +667,8 @@
 
         goToday() {
           if (!this.canSelectDay) return;
-          const now = new Date();
+          let now = new Date();
+          now = this.clampLocalDate(now);
           this.draftDate = now;
           this.draftDateDisplay = this.formatDateDisplay(now);
           this.visibleYear = now.getFullYear();
@@ -421,6 +689,7 @@
           if (!this.canSelectHour) return;
           this.draftHour = hour;
           if (this.draftMinute === null) this.draftMinute = 0;
+          if (this.variant === 'time' || this.variant === 'datetime') this.applySelectionConstraints();
           if (this.open) this.visibleValue = this.formatDraftDisplay();
         },
 
@@ -449,6 +718,7 @@
           if (!this.canSelectMinute) return;
           this.draftMinute = minute;
           if (this.draftHour === null) this.draftHour = 0;
+          if (this.variant === 'time' || this.variant === 'datetime') this.applySelectionConstraints();
           if (this.open) this.visibleValue = this.formatDraftDisplay();
         },
 
@@ -473,6 +743,62 @@
           this.draftMinute = Math.floor(now.getMinutes() / this.minuteStep) * this.minuteStep;
           this.applySelectionConstraints();
           if (this.open) this.visibleValue = this.formatDraftDisplay();
+        },
+
+        isHourOutOfRange(hour24) {
+          if (this.disabled) return true;
+          if (this.variant === 'time') {
+            const minV = this._boundMinValue();
+            const maxV = this._boundMaxValue();
+            if (minV === null && maxV === null) return false;
+            const minutes = this.minuteOptions?.length ? this.minuteOptions : [0];
+            return minutes.every((m) => {
+              const v = hour24 * 60 + m;
+              if (minV !== null && v < minV) return true;
+              if (maxV !== null && v > maxV) return true;
+              return false;
+            });
+          }
+          if (this.variant === 'datetime') {
+            if (!this.draftDate) return false;
+            const minV = this._boundMinValue();
+            const maxV = this._boundMaxValue();
+            if (minV === null && maxV === null) return false;
+            const minutes = this.minuteOptions?.length ? this.minuteOptions : [0];
+            return minutes.every((m) => {
+              const v = new Date(this.draftDate.getFullYear(), this.draftDate.getMonth(), this.draftDate.getDate(), hour24, m, 0, 0).getTime();
+              if (minV !== null && v < minV) return true;
+              if (maxV !== null && v > maxV) return true;
+              return false;
+            });
+          }
+          return false;
+        },
+
+        isMinuteOutOfRange(minute) {
+          if (this.disabled) return true;
+          if (this.variant === 'time') {
+            const minV = this._boundMinValue();
+            const maxV = this._boundMaxValue();
+            if (minV === null && maxV === null) return false;
+            const h = this.draftHour ?? 0;
+            const v = h * 60 + minute;
+            if (minV !== null && v < minV) return true;
+            if (maxV !== null && v > maxV) return true;
+            return false;
+          }
+          if (this.variant === 'datetime') {
+            if (!this.draftDate) return false;
+            const minV = this._boundMinValue();
+            const maxV = this._boundMaxValue();
+            if (minV === null && maxV === null) return false;
+            const h = this.draftHour ?? 0;
+            const v = new Date(this.draftDate.getFullYear(), this.draftDate.getMonth(), this.draftDate.getDate(), h, minute, 0, 0).getTime();
+            if (minV !== null && v < minV) return true;
+            if (maxV !== null && v > maxV) return true;
+            return false;
+          }
+          return false;
         },
 
         formatWithCustomPattern() {
@@ -912,11 +1238,11 @@
           @change="onInputChange()"
           x-ref="textInput"
           class="w-48 flex-1 px-2 bg-transparent outline-none"
-          :class="(disabled ? 'cursor-not-allowed opacity-70 ' : 'cursor-pointer text-slate-900 ') + ({{ jsonify(clearable) }} ? 'pr-16' : 'pr-10')"
+          :class="(disabled ? 'cursor-not-allowed opacity-70 ' : 'cursor-pointer text-slate-900 ') + (clearable && hasValue() && !disabled ? 'pr-16' : 'pr-10')"
         />
 
         <button
-          x-show="{{ jsonify(clearable) }} && hasValue()"
+          x-show="clearable && hasValue() && !disabled"
           type="button"
           class="absolute inset-y-0 right-9 flex items-center px-1 text-slate-400 transition-colors hover:text-slate-600 disabled:opacity-50"
           :disabled="disabled"
@@ -928,7 +1254,8 @@
 
         <button
           type="button"
-          class="absolute inset-y-0 right-0 flex items-center px-3 rounded-r-md text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="absolute inset-y-0 right-0 flex items-center px-3 rounded-r-md text-slate-500 transition-colors disabled:opacity-50"
+          :class="disabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-slate-50 hover:text-slate-700'"
           :disabled="disabled"
           @click="toggleOpen()"
           aria-label="Open datetime picker"

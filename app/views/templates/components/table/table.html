@@ -18,7 +18,8 @@
     page_index=0,
     page_size=10,
     total_count=0,
-    reload_event='table:reload'
+    reload_event='table:reload',
+    statistics_block=''
 ) %}
 <div 
     class="bg-white shadow-sm rounded-lg border border-gray-200"
@@ -32,12 +33,13 @@
         {{ header|safe }}
         <form 
             :id="$id('filter')" 
-            class="my-2 flex flex-wrap gap-4" 
+            class="flex flex-wrap gap-x-3 gap-y-2 {% if filters %}my-2{% endif %}" 
             hx-get="{{ partial_url }}" 
             :hx-target="'#' + $id('table')"
             hx-include="[name='page_size'], [name='sort'], [name='sort_direction']"
             hx-push-url="false"
             hx-trigger="{% if reload_event %}{{ reload_event }} from:body, {% endif %}change, keyup changed delay:600ms"
+            hx-swap="outerHTML"
             @submit.prevent
         >
             {# Dynamic filters #}
@@ -95,9 +97,10 @@
             </div>
             {% endfor %}
         </form>
-        
-        <div class="mb-4 flex flex-wrap gap-2 justify-end">
-            {% for action in actions|default([]) %}
+        {% if actions %}
+        {# Table Actions (Buttons below search/filters) - chỉ hiển thị actions có scope='table' #}
+        <div class="mb-2 flex flex-wrap gap-2 justify-end">
+            {% for action in actions %}
             {% set ctx_menu = get_attribute(action.extra_attributes, 'menu', {}) %}
             {% call menu(groups=ctx_menu.groups, position=ctx_menu.position) %}
             {{
@@ -134,6 +137,7 @@
             }}
             {% endfor %}
         </div>
+        {% endif %}
 
     </div>
     {{ table_body(
@@ -146,7 +150,8 @@
         row_actions=row_actions,
         page_index=page_index,
         page_size=page_size,
-        total_count=total_count
+        total_count=total_count,
+        statistics_block=statistics_block
     ) }}
 </div>
 {% endmacro %}

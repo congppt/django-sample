@@ -16,7 +16,7 @@ class Button(BaseModel):
     icon_position: IconPosition = IconPosition.LEFT
     variant: Variant = Variant.FILLED
     disabled: bool = False
-    loading_text: str = 'Submitting...'
+    loading_text: str = 'Đang xử lý...'
     href: str | None = None
     htmx_event_prefix: str | None = None
     klass: str = ''

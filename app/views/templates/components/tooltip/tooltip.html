@@ -122,29 +122,31 @@
     {{ caller() }}
   </div>
 
-  <!-- Tooltip panel -->
-  <div
-    x-ref="panel"
-    x-cloak
-    x-show="open"
-    x-transition
-    role="tooltip"
-    :id="tooltipId"
-    class="fixed z-[9999] rounded-xl bg-slate-900 text-slate-50 shadow-lg px-3 py-2 text-sm font-normal leading-relaxed whitespace-normal break-words"
-    :class="[
-      'inline-block max-w-xs',
-      placement === 'top'
-        ? 'origin-bottom'
-        : 'origin-top'
-    ].filter(Boolean).join(' ')"
-    :style="{ top: coords.top + 'px', left: coords.left + 'px' }"
-    @mouseenter="open = true"
-    @mouseleave="open = false"
-  >
-    <p class="text-slate-300">
-      {{ description }}
-    </p>
-  </div>
+  <!-- body: fixed + getBoundingClientRect() must share the same coordinate space (transformed modals break that). -->
+  <template x-teleport="body">
+    <div
+      x-ref="panel"
+      x-cloak
+      x-show="open"
+      x-transition
+      role="tooltip"
+      :id="tooltipId"
+      class="fixed z-[9999] rounded-xl bg-slate-900 text-slate-50 shadow-lg px-3 py-2 text-sm font-normal leading-relaxed whitespace-normal break-words"
+      :class="[
+        'inline-block max-w-xs',
+        placement === 'top'
+          ? 'origin-bottom'
+          : 'origin-top'
+      ].filter(Boolean).join(' ')"
+      :style="{ top: coords.top + 'px', left: coords.left + 'px' }"
+      @mouseenter="open = true"
+      @mouseleave="open = false"
+    >
+      <p class="text-slate-300">
+        {{ description | safe }}
+      </p>
+    </div>
+  </template>
 </div>
 {% endif %}
 {% endmacro %}

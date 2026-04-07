@@ -10,12 +10,12 @@ bulk_actions=[],
 row_actions=[],
 page_index=0,
 page_size=10,
-total_count=0
+total_count=0,
+statistics_block=''
 ) %}
 <div 
     :id="$id('table')"
-    hx-ext="alpine-morph"
-    hx-swap="morph"
+    data-el-description="table"
     x-data="{
       tick: 0,
       get allChecked() {
@@ -37,9 +37,11 @@ total_count=0
     x-init="$watch('anyChecked', (value) => $dispatch('bulk-actions', value)); $dispatch('bulk-actions', anyChecked);"
     @htmx:after-swap.document="if ($event.target.id === $id('table')) { $data.allChecked = false; $data.tick = 0;}"
 >
+  {% if statistics_block %}
+  {{ statistics_block | safe}}
+  {% endif %}
   <div class="overflow-auto max-h-130">
     <table class="w-full"
-          
       >
       <thead
         class="sticky top-0 z-5 h-12 text-sm tracking-wider cursor-pointer break-words"
@@ -52,7 +54,7 @@ total_count=0
           {% endif %}
 
           {% for column in columns %}
-          <th scope="col" class="h-1 max-w-50">
+          <th scope="col" class="h-1 py-3 px-3 max-w-fit whitespace-nowrap">
             {% if column.sortable %}
             {% set sort_direction_icon = 'arrow-up-down.svg' if sort != column.name else 'arrow-up.svg' if sort_direction == 'asc' else 'arrow-down.svg' %}
             {{ button(
@@ -86,7 +88,7 @@ total_count=0
           {% endfor %}
 
           {% if row_actions %}
-          <th scope="col" class="sticky right-0 py-3 px-6 text-center" style="background-color: #F1F3F9;">Thao tác</th>
+          <th scope="col" class="sticky right-0 py-3 px-6 text-start w-px whitespace-nowrap" style="background-color: #F1F3F9;">Thao tác</th>
           {% endif %}
         </tr>
       </thead>
@@ -105,25 +107,34 @@ total_count=0
 
           {% for column in columns %}
           {% set need_tooltip= get_attribute(column,'need_tooltip') %}
-          {% set wrap_class = 'whitespace-nowrap' if need_tooltip is sameas False else 'break-words min-w-50' %}
+          {% set wrap_class = 'whitespace-nowrap' if need_tooltip is sameas False else 'break-words min-w-80 max-w-120' %}
           <td class="px-4 py-4 {{ wrap_class }} text-sm text-gray-900 text-{{ column.align or 'center' }} group-has-hover:bg-gray-200">
             {% set value = get_attribute(row, column.name) %}
             {% set formatter = get_attribute(column, 'format') %}
+            {% if column.is_hypertext %}
+            {% set formatted_value = formatter(row) %}
+            {% else %}
             {% set formatted_value = formatter(value) %}
+            {% endif %}
             {% if need_tooltip %}
             {% call tooltip(value) %}
-            <span>{{ formatted_value|safe }}</span>
+            {{ formatted_value|safe }}
             {% endcall %}
             {% else %}
-            <span>{{ formatted_value|safe }}</span>
+            {{ formatted_value|safe }}
             {% endif %}
           </td>
           {% endfor %}
 
           {% if row_actions %}
           <td class="px-6 py-4 sticky right-0 {{ row_bg_color }} group-has-hover:bg-gray-200">
-            <div class="flex items-center justify-center gap-2">
+            <div class="flex items-center justify-start gap-2">
               {% for action in row_actions %}
+              {% set render = true %}
+              {% if action.render_predicate %}
+              {% set render = action.render_predicate(row) %}
+              {% endif %}
+              {% if render %}
               {{
                 button(
                   text=action.label,
@@ -132,12 +143,13 @@ total_count=0
                   variant=action.variant,
                   disabled=action.disabled,
                   loading_text=action.loading_text,
-                  href=action.href,
+                  href=action.href|substitute_row_attrs(row, action.key),
                   htmx_event_prefix=action.htmx_event_prefix,
                   class=action.klass,
-                  extra_attributes=action.extra_attributes
+                  extra_attributes=action.extra_attributes|substitute_row_attrs(row, action.key)
                 )
               }}
+              {% endif %}
               {% endfor %}
             </div>
           </td>
@@ -171,6 +183,7 @@ total_count=0
           :hx-target="'#' + $id('table')"
           hx-push-url="false"
           class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+          <option value="5" {% if page_size|int==5 %}selected{% endif %}>5 dòng/trang</option>
           <option value="10" {% if page_size|int==10 %}selected{% endif %}>10 dòng/trang</option>
           <option value="25" {% if page_size|int==25 %}selected{% endif %}>25 dòng/trang</option>
           <option value="50" {% if page_size|int==50 %}selected{% endif %}>50 dòng/trang</option>

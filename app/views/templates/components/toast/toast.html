@@ -4,7 +4,7 @@
 {% for message in source %}
 {% set _ = messages.append({'message': message.message,'level': message.level, 'id': uuid() }) %}
 {% endfor %}
-<div id="toast-manager" class="fixed top-16 right-0 p-4" style="z-index: 9999;">
+<div id="toast-manager" class="fixed top-16 right-0" style="z-index: 9999;">
     <div id="toast-container"
      class="flex flex-col gap-2"
      x-data="{
@@ -23,7 +23,7 @@
         $nextTick(() => {
                 htmx.on('new-message', (e) => {
                     const incoming = e?.detail?.value || [];
-                    $data.messages = [...($data.messages || []), ...(incoming || [])];
+                    $data.messages = [...($data?.messages || []), ...(incoming || [])];
             });
         });
         "

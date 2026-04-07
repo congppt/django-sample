@@ -27,16 +27,18 @@
     tooltip_axis=tooltip_axis,
   ) %}
   {% if value is not sequence or value is string %}
-  {% set value = [value] if value else [] %}
+  {% set value = [value] if value is not none else [] %}
   {% endif %}
   <div
     class="h-full w-full min-w-0 {{ class }}"
+    :class="disabled ? 'cursor-not-allowed' : ''"
     x-data="{
       optionsUrl: '{{ options_url }}',
       reloadEvents: {{ jsonify(reload_events or []) }},
       // Params to include when (re)loading options (fed via reload events).
       params: {},
       multiple: {{ jsonify(multiple) }},
+      disabled: {{ jsonify(disabled) }},
       open: false,
       panelPlaced: false,
       placement: 'bottom',
@@ -227,6 +229,7 @@
         };
       },
       openDropdown() {
+        if (this.disabled) return;
         if (this.open) return;
         this.panelPlaced = false;
         this.coords = { top: 0, left: 0, width: 0, minWidth: 0 };
@@ -264,6 +267,7 @@
         this.isFiltering = true;
       },
       clear(e) {
+        if (this.disabled) return;
         e.stopPropagation();
         this.selected = [];
         this.searchQuery = '';
@@ -271,6 +275,7 @@
         this.notifyInputChanged();
       },
       toggle(val) {
+        if (this.disabled) return;
         this.normalizeSelected();
         if (this.multiple) {
           const idx = this.selected.indexOf(val);
@@ -294,6 +299,7 @@
         this.closeDropdown();
       },
       remove(val) {
+        if (this.disabled) return;
         this.normalizeSelected();
         const idx = this.selected.indexOf(val);
         if (idx >= 0) this.selected.splice(idx, 1);
@@ -301,7 +307,9 @@
       },
       notifyInputChanged() {
         // Notify observers that the selected values changed.
-        setTimeout(() => this.$refs.input?.dispatchEvent(new Event('change', { bubbles: true })), 0);
+        this.$nextTick(() => {
+          this.$refs.input?.dispatchEvent(new Event('change', { bubbles: true }));
+        });
       },
       chooseByIndex(index) {
         const option = this.filteredOptions[index];
@@ -309,6 +317,7 @@
         this.toggle(option.value);
       },
       onArrowDown() {
+        if (this.disabled) return;
         if (!this.open) {
           this.openDropdown();
           return;
@@ -322,6 +331,7 @@
         }
       },
       onArrowUp() {
+        if (this.disabled) return;
         if (!this.open) {
           this.openDropdown();
           return;
@@ -335,6 +345,7 @@
         }
       },
       onEnter() {
+        if (this.disabled) return;
         if (!this.open) {
           this.openDropdown();
           return;
@@ -429,19 +440,21 @@
       role="combobox"
       :aria-expanded="open"
       aria-haspopup="listbox"
+      :aria-disabled="disabled"
       :aria-controls="$id('input') + '-listbox'"
       :aria-activedescendant="open && highlightedIndex >= 0 ? `${$id('input')}-option-${highlightedIndex}` : null"
       :id="$id('input')"
-      tabindex="0"
+      :tabindex="disabled ? -1 : 0"
       @click="openDropdown()"
       @keydown.down.prevent="onArrowDown()"
       @keydown.up.prevent="onArrowUp()"
       @keydown.enter.prevent="onEnter()"
       class="relative h-full flex items-center transition"
+      :class="disabled ? 'pointer-events-none' : ''"
     >
     <div x-show="!open" class="flex px-2 pr-14 w-48 flex-1 items-center gap-1.5">
         <template x-if="selectedLabels.length === 0">
-          <span class="truncate text-slate-500">{{ placeholder|trim }}</span>
+          <span class="truncate" :class="disabled ? 'text-slate-400' : 'text-slate-500'">{{ placeholder|trim }}</span>
         </template>
       
         <template x-if="selectedLabels.length > 0">
@@ -454,13 +467,16 @@
               <template x-for="item in selectedLabels.slice(0, 3)" :key="`chip-${item.value}`">
                 <span
                   class="inline-flex flex-shrink max-w-80 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
-                  :class="item.klass || 'bg-slate-100 text-slate-800'"
+                  :class="disabled ? 'bg-slate-200 text-slate-400' : (item.klass || 'bg-slate-100 text-slate-800')"
                 >
                   <span class="truncate" x-text="item.label"></span>
                   <button
                     type="button"
+                    x-show="!disabled"
+                    x-cloak
+                    style="display: none;"
                     class="flex-shrink-0 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-current opacity-70 hover:bg-black/10 hover:opacity-100"
-                    @click.stop="remove(item.value)"
+                    @click.stop="$data.remove(item.value)"
                   >
                     {% include 'close.svg' %}
                   </button>
@@ -468,11 +484,11 @@
               </template>
         
               <template x-if="selectedLabels.length > 3">
-                <span class="flex-shrink-0 text-xs text-slate-500" x-text="`+${selectedLabels.length - 3}`"></span>
+                <span class="flex-shrink-0 text-xs" :class="disabled ? 'text-slate-400' : 'text-slate-500'" x-text="`+${selectedLabels.length - 3}`"></span>
               </template>
             </div>
           {% else %}
-            <div class="flex-1 truncate text-slate-900">
+            <div class="flex-1 truncate" :class="disabled ? 'text-slate-400' : 'text-slate-900'">
               <span x-text="selectedLabels[0].label"></span>
             </div>
           {% endif %}
@@ -485,7 +501,8 @@
         x-show="open"
         x-model="searchQuery"
         type="text"
-        class="w-48 flex-1 px-2 pr-14 text-slate-900 outline-none"
+        class="w-48 flex-1 px-2 pr-14 outline-none"
+        :class="disabled ? 'text-slate-400 cursor-not-allowed' : 'text-slate-900'"
         placeholder="{{ placeholder|trim }}"
         @mousedown.stop
         @click.stop
@@ -501,7 +518,7 @@
         </span>
         <button
           type="button"
-          x-show="selected.length > 0"
+          x-show="selected.length > 0 && !disabled"
           x-cloak
           style="display: none;"
           @click="clear($event)"
