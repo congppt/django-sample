@@ -1,5 +1,3 @@
-from uuid import uuid4
-from django.contrib.messages import get_messages
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse
 from jinja2 import Environment
@@ -20,9 +18,7 @@ def environment(**options):
             "static": staticfiles_storage.url,
             "url": reverse,
             "jsonify": jsonify,
-            "get_attribute": get_attribute,
-            "get_messages": get_messages,
-            "uuid": uuid4,
+            "getattr": get_attribute,
         }
     )
 

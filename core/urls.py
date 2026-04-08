@@ -21,9 +21,11 @@ from django.conf.urls.static import static
 from django.urls import include, path
 
 from app import views
+import env
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/sample/', permanent=False)),
+
+    path('', RedirectView.as_view(url=f'{env.CONTEXT_ROOT}/', permanent=False)),
     path('admin/', admin.site.urls),
-    path('sample/', include(views)),
+    path(f'{env.CONTEXT_ROOT}/', include(views)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -28,7 +28,6 @@ MINIO_ENDPOINT = __parsed_minio_config['endpoint']
 MINIO_ACCESS_KEY = __parsed_minio_config['username']
 MINIO_SECRET_KEY = __parsed_minio_config['password']
 MINIO_BUCKET = __parsed_minio_config['bucket']
-MINIO_PUBLIC_DOMAIN = __parsed_minio_config['public_domain']
 
 LOG_DIR = os.getenv('LOG_DIR', 'logs')
 
@@ -45,7 +44,7 @@ __exclude_dirs = ['core', 'static', 'staticfiles', 'utils', LOG_DIR ]
 # 2. Get the directory where the current script is located
 __current_dir = pathlib.Path(__file__).parent.resolve()
 
-def __get_app_name(base_path: pathlib.Path, ignore_list: list[str]) -> str | None:
+def __get_app_dir(base_path: pathlib.Path, ignore_list: list[str]) -> str | None:
     # Iterate through all items in the current directory
     for path in base_path.iterdir():
         # Check if it's a directory AND it's not a hidden directory and its name isn't in your list
@@ -54,6 +53,8 @@ def __get_app_name(base_path: pathlib.Path, ignore_list: list[str]) -> str | Non
     raise SystemError("No app name found")
 
 # Execute if not hardcoded
-APP_NAME = "" or __get_app_name(__current_dir, __exclude_dirs)
-if not APP_NAME:
-    raise EnvironmentError("No app name found")
+APP_DIR = "" or __get_app_dir(__current_dir, __exclude_dirs)
+if not APP_DIR:
+    raise EnvironmentError("App directory not found")
+
+CONTEXT_ROOT = os.getenv('CONTEXT_ROOT', APP_DIR)

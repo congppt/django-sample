@@ -1,14 +1,10 @@
 {% from 'templates/components/button/button.html' import button %}
-{% macro toast(source) %}
-{% set messages = [] %}
-{% for message in source %}
-{% set _ = messages.append({'message': message.message,'level': message.level, 'id': uuid() }) %}
-{% endfor %}
+{% macro toast() %}
 <div id="toast-manager" class="fixed top-16 right-0" style="z-index: 9999;">
     <div id="toast-container"
      class="flex flex-col gap-2"
      x-data="{
-        messages: {{ jsonify(messages) }},
+        messages: [],
         classMap: {
             25: 'bg-green-500 text-white',
             20: 'bg-blue-500 text-white',

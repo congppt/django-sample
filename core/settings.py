@@ -39,15 +39,15 @@ SESSION_SAVE_EVERY_REQUEST = True
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
@@ -59,7 +59,7 @@ AUTH_PASSWORD_VALIDATORS = [
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'huey.contrib.djhuey',
-    f'{env.APP_NAME}.apps.{env.APP_NAME.capitalize()}Config',
+    f'{env.APP_DIR}.apps.{env.APP_DIR.capitalize()}Config',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -87,7 +87,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.jinja2.Jinja2',
         'DIRS': [
-            BASE_DIR / env.APP_NAME / 'views', 
+            BASE_DIR / env.APP_DIR / 'views', 
             BASE_DIR / 'static' / 'icons'
         ],
         'APP_DIRS': True,
@@ -154,7 +154,7 @@ HUEY = {
     'results': True,  # Store return values of tasks.
     'store_none': False,  # If a task returns None, do not save to results.
     # 'immediate_use_memory': False,
-    'immediate': DEBUG,  # If DEBUG=True, run synchronously.
+    'immediate': False,  # If true, run synchronously. Periodic task cannot run in sync mode
     'utc': True,  # Use UTC for all times internally.
     'blocking': True,  # Perform blocking pop rather than poll Redis.
     # 'url': env.REDIS_URL,
@@ -188,7 +188,7 @@ STORAGES = {
     },
 }
 
-STATIC_URL = f'{env.APP_NAME}/static/'
+STATIC_URL = f'{env.CONTEXT_ROOT}/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
@@ -215,4 +215,7 @@ LANGUAGES = [
 
 # Authentication settings
 # https://docs.djangoproject.com/en/5.2/ref/settings/#login-url
-LOGIN_URL = f'/{env.APP_NAME}/sign-in'  # URL để redirect khi user chưa đăng nhập
+LOGIN_URL = f'{env.CONTEXT_ROOT}/'  # URL để redirect khi user chưa đăng nhập
+ 
+# Maximum size of request body
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024  # 20MB

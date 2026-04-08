@@ -7,7 +7,6 @@ from django.utils.dateparse import parse_date, parse_datetime
 from pydantic import BaseModel, ConfigDict
 
 from ..button import Button
-from .....utils.format import format_date, format_datetime, format_number, format_text
 
 MISSING = object()
 class FilterParam(BaseModel):
@@ -122,15 +121,6 @@ class TableColumn(BaseModel):
         BOOLEAN = "boolean"
         IMAGE = "image"
 
-        @property
-        def default_formatter(self):
-            return {
-                TableColumn.Type.DATE: lambda value: format_date(value),
-                TableColumn.Type.DATETIME: lambda value: format_datetime(value),
-                TableColumn.Type.NUMBER: lambda value: format_number(value),
-                TableColumn.Type.TEXT: lambda value: format_text(value),
-            }.get(self)
-
     class Align(StrEnum):
         LEFT = "left"
         CENTER = "center"
@@ -148,8 +138,7 @@ class TableColumn(BaseModel):
 
     
     def format(self, value: Any):
-        formatter = self.formatter or self.type.default_formatter
-        return formatter(value) if formatter else value
+        return self.formatter(value) if self.formatter else value
 
 class TableAction(Button):
     pass

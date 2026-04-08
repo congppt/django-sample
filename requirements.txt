@@ -15,3 +15,4 @@ wheel==0.45.0 # build tool for peewee
 peewee==3.18.3 # huey dependency for sql storage
 psycopg2-binary==2.9.11 # peewee postgres driver
 minio==7.2.8 # storage
+faker==40.13.0 # mock data
